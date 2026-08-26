@@ -3,472 +3,217 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>昆明路书 · 2026.8.27–8.30</title>
+  <title>城市路书</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --bg: #f3f0e8;
-      --ink: #1c2421;
-      --muted: #5c6b64;
-      --card: #fffcf6;
-      --line: #d9d2c4;
-      --accent: #0f6b5c;
-      --accent-soft: #d8efe8;
-      --warm: #c45c26;
-      --rain: #3d6f8c;
-      --shadow: 0 10px 30px rgba(28, 36, 33, 0.08);
-      --radius: 16px;
-      --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --bg: #101816;
+      --land: #2c5a4f;
+      --land-line: rgba(236, 220, 185, 0.38);
+      --yunnan: #e2c48a;
+      --yunnan-hover: #f0d7a8;
+      --yunnan-line: #f6ead0;
+      --ink: #f3eadc;
+      --muted: #9aafaa;
+      --gold: #efc27a;
+      --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
+      --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
     }
     * { box-sizing: border-box; }
-    body {
+    html, body {
       margin: 0;
-      font-family: var(--font);
+      height: 100%;
+      background: var(--bg);
       color: var(--ink);
-      background:
-        radial-gradient(1200px 600px at 10% -10%, #e7f3ef 0%, transparent 55%),
-        radial-gradient(900px 500px at 100% 0%, #f7e8dc 0%, transparent 50%),
-        var(--bg);
-      min-height: 100vh;
+      font-family: var(--sans);
     }
-    .wrap {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 28px 20px 60px;
-    }
-    header {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 22px;
-    }
-    .eyebrow {
-      color: var(--accent);
-      font-size: 13px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(28px, 4vw, 40px);
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-    }
-    .layout {
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 16px;
-      margin-top: 14px;
-    }
-    @media (max-width: 960px) {
-      .layout { grid-template-columns: 1fr; }
-      #map { min-height: 360px !important; }
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .card-head {
-      padding: 14px 16px 12px;
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: baseline;
-      border-bottom: 1px solid var(--line);
-      background: #fffcf6;
-    }
-    .card-head h2 {
-      margin: 0;
-      font-size: 17px;
-      letter-spacing: -0.01em;
-    }
-    .card-head .meta {
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .map-shell {
-      position: relative;
-      background: transparent;
+    body { overflow: hidden; }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(ellipse at 48% 52%, #1c332c 0%, #101816 62%);
     }
     #map {
-      height: calc(100vh - 240px);
-      min-height: 520px;
-      width: 100%;
+      position: absolute;
+      inset: 0;
+      z-index: 1;
       background: transparent;
     }
     .leaflet-container {
-      font-family: var(--font);
       background: transparent !important;
+      font-family: var(--sans);
     }
     .leaflet-div-icon {
       background: transparent !important;
       border: none !important;
     }
-    /* 底图半透明叠在页面底色上，避免发灰发白 */
-    .leaflet-tile-pane {
-      opacity: 0.38;
+    .leaflet-overlay-pane {
+      filter: drop-shadow(0 28px 40px rgba(0, 0, 0, 0.4));
     }
-    .leaflet-control-attribution {
-      background: transparent !important;
-      box-shadow: none !important;
-      color: var(--muted) !important;
-    }
-    .leaflet-control-zoom a {
-      color: var(--ink) !important;
-    }
-    .leaflet-popup-content-wrapper {
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(28,36,33,0.12);
-      border: 1px solid var(--line);
-    }
-    .leaflet-popup-content {
-      margin: 10px 12px;
-      font-family: var(--font);
-      line-height: 1.45;
-      min-width: 140px;
-    }
-    .leaflet-popup-tip {
-      box-shadow: none;
-    }
-    .mk-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      filter: drop-shadow(0 4px 10px rgba(28,36,33,0.22));
-    }
-    .mk {
-      flex: 0 0 30px;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: var(--accent);
-      color: #fff;
-      border: 2.5px solid #fff;
-      box-shadow: 0 0 0 2px rgba(15,107,92,0.18);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-    }
-    .mk.hotel { background: #9a5b2f; box-shadow: 0 0 0 2px rgba(154,91,47,0.2); }
-    .mk.transit { background: #3d6f8c; box-shadow: 0 0 0 2px rgba(61,111,140,0.2); }
-    .mk.food { background: #c45c26; box-shadow: 0 0 0 2px rgba(196,92,38,0.2); }
-    .mk-name {
-      background: #fffcf6;
-      border: 1px solid rgba(28,36,33,0.12);
-      color: var(--ink);
-      font-size: 12px;
-      font-weight: 700;
-      line-height: 1.25;
-      padding: 5px 9px;
-      border-radius: 8px;
-      white-space: nowrap;
-    }
-    .route-label {
-      background: #fffcf6;
-      border: 1px solid rgba(15,107,92,0.28);
-      color: #0f6b5c;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 9px;
-      border-radius: 999px;
-      white-space: nowrap;
-      box-shadow: 0 3px 10px rgba(28,36,33,0.14);
+    .overlay {
+      position: absolute;
+      z-index: 500;
+      top: 0;
+      left: 0;
+      max-width: min(460px, calc(100% - 24px));
+      padding: 36px 48px 28px 40px;
       pointer-events: none;
+      background: linear-gradient(90deg, rgba(16, 24, 22, 0.82) 0%, rgba(16, 24, 22, 0.35) 70%, transparent 100%);
     }
-    .popup-time {
-      color: var(--warm);
+    .brand {
+      margin: 0;
       font-size: 12px;
-      font-weight: 650;
-      margin-bottom: 2px;
-      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 600;
     }
-    .popup-title {
+    h1 {
+      margin: 10px 0 0;
+      font-family: var(--serif);
+      font-size: clamp(40px, 6vw, 68px);
       font-weight: 700;
-      font-size: 14px;
+      line-height: 1.05;
+      letter-spacing: 0.04em;
     }
-    .popup-desc {
+    .lede {
+      margin: 12px 0 0;
       color: var(--muted);
-      font-size: 12px;
-      margin-top: 4px;
-    }
-    .legend {
-      padding: 10px 16px 12px;
-      font-size: 12px;
-      color: var(--muted);
-      border-top: 1px solid var(--line);
-      background: #fffcf6;
-    }
-    .timeline {
-      padding: 8px 8px 16px;
-      max-height: calc(100vh - 220px);
-      min-height: 520px;
-      overflow: auto;
-    }
-    .stop {
-      display: grid;
-      grid-template-columns: 72px 1fr;
-      gap: 10px;
-      padding: 12px;
-      border-radius: 12px;
-      margin: 6px 8px;
-    }
-    .stop:hover, .stop.active {
-      background: var(--accent-soft);
-    }
-    .time {
-      font-variant-numeric: tabular-nums;
-      font-size: 12px;
-      color: var(--warm);
-      font-weight: 700;
-      padding-top: 2px;
-    }
-    .stop h3 {
-      margin: 0 0 4px;
       font-size: 15px;
+      letter-spacing: 0.04em;
     }
-    .stop p {
+    .hint {
+      position: absolute;
+      z-index: 500;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
       margin: 0;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.5;
+      letter-spacing: 0.12em;
+      pointer-events: none;
     }
-    .transit {
-      margin: 0 18px;
-      padding: 6px 10px 6px 82px;
-      font-size: 12px;
-      color: var(--rain);
-      border-left: 2px dashed #b7c9c2;
-      position: relative;
-    }
-    .wx-board {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
+    .spot {
+      display: flex;
+      align-items: flex-start;
       gap: 10px;
-      margin: 16px 0 14px;
-    }
-    @media (max-width: 720px) {
-      .wx-board { grid-template-columns: 1fr 1fr; }
-    }
-    .wx-day {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
       cursor: pointer;
-      transition: 0.15s ease;
+      filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.35));
     }
-    .wx-day:hover, .wx-day.active {
-      border-color: var(--accent);
-      box-shadow: var(--shadow);
+    .spot-core {
+      position: relative;
+      flex: 0 0 16px;
+      width: 16px;
+      height: 16px;
+      margin-top: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid #fff8ea;
+      box-shadow: 0 0 0 6px rgba(239, 194, 122, 0.18);
     }
-    .wx-day .d {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 6px;
+    .spot-core::after {
+      content: "";
+      position: absolute;
+      inset: -14px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(239, 194, 122, 0.7);
+      animation: pulse 2.4s ease-out infinite;
     }
-    .wx-day .t {
-      font-size: 20px;
+    @keyframes pulse {
+      0% { transform: scale(0.55); opacity: 0.85; }
+      100% { transform: scale(1.55); opacity: 0; }
+    }
+    .spot-card {
+      min-width: 158px;
+      padding: 12px 14px 13px;
+      border-radius: 16px;
+      background: #f6efe2;
+      color: #1c2421;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    }
+    .spot-card strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 22px;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: 0.12em;
     }
-    .wx-day .desc {
-      margin-top: 6px;
-      font-size: 13px;
-      color: var(--ink);
-    }
-    .wx-day .rain {
-      margin-top: 4px;
+    .spot-card em {
+      display: block;
+      margin-top: 3px;
+      font-style: normal;
       font-size: 12px;
-      color: var(--rain);
+      color: #5c6b64;
+    }
+    .spot-card span {
+      display: inline-block;
+      margin-top: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #8a5a24;
+    }
+    .spot:hover .spot-card {
+      transform: translateY(-1px);
+    }
+    .fail {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      z-index: 400;
+      color: var(--muted);
+    }
+    .fail a { color: var(--gold); }
+    @media (max-width: 640px) {
+      .overlay { top: 22px; left: 20px; }
+      h1 { font-size: 40px; }
+      .hint { bottom: 18px; font-size: 12px; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="eyebrow">Kunming Field Guide</div>
-      <h1>昆明路书 · 2026.8.27–8.30</h1>
-    </header>
-
-    <div class="wx-board" id="wxBoard"></div>
-
-    <div class="layout">
-      <section class="card">
-        <div class="card-head">
-          <h2 id="mapTitle">路线地图</h2>
-          <div class="meta">站名旁数字为顺序</div>
-        </div>
-        <div class="map-shell">
-          <div id="map"></div>
-        </div>
-        <div class="legend">圆点旁为站名 · 连线上为交通耗时</div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2 id="listTitle">当日行程</h2>
-          <div class="meta" id="listMeta"></div>
-        </div>
-        <div class="timeline" id="timeline"></div>
-      </section>
-    </div>
-  </div>
+  <div id="map" role="application" aria-label="中国城市地图"></div>
+  <header class="overlay">
+    <p class="brand">Field Notes</p>
+    <h1>城市路书</h1>
+    <p class="lede">一张地图，记下路过的城</p>
+  </header>
+  <p class="hint">点击昆明 · 进入路书</p>
+  <div class="fail" id="fail">地图加载失败，仍可 <a href="kunming.html">进入昆明路书</a></div>
 
   <script>
-    const HOTEL = {
-      name: "全季酒店（龙湖时代金融中心店）",
-      lat: 24.9968,
-      lng: 102.7345,
-      kind: "hotel"
-    };
-
-    const DAYS = [
+    const CITIES = [
       {
-        id: "d27",
-        date: "2026-08-27",
-        label: "周四 8/27",
-        title: "落地 · 巡津街 · 老街",
-        summary: "机场入住后，逛巡津街与昆明老街觅食",
-        stops: [
-          { time: "13:00", name: "昆明长水国际机场", lat: 25.1019, lng: 102.9292, kind: "transit", desc: "抵达" },
-          { time: "13:30–14:00", name: HOTEL.name, lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "入住（出城耗时可能波动）" },
-          { time: "14:30–16:00", name: "巡津街", lat: 25.0348, lng: 102.7068, kind: "spot", desc: "街区漫步" },
-          { time: "16:30–20:00", name: "昆明老街", lat: 25.0332, lng: 102.7154, kind: "spot", desc: "炸洋芋 / 包浆豆腐 / 鲜花饼" },
-          { time: "20:00+", name: "返回酒店", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "" }
-        ],
-        legs: [
-          { from: 0, to: 1, label: "打车 ≈30–45min" },
-          { from: 1, to: 2, label: "打车 ≈20min" },
-          { from: 2, to: 3, label: "打车 ≈20min" },
-          { from: 3, to: 4, label: "打车 ≈20–25min" }
-        ]
-      },
-      {
-        id: "d28",
-        date: "2026-08-28",
-        label: "周五 8/28",
-        title: "省博 · 湿地 · 烧烤",
-        summary: "云南省博物馆 → 宝丰湿地 / 官渡 → 牧兰盛",
-        stops: [
-          { time: "08:30", name: "酒店出发", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "出发" },
-          { time: "09:00–12:00", name: "云南省博物馆", lat: 24.9522, lng: 102.7522, kind: "spot", desc: "建议预约" },
-          { time: "12:00–13:00", name: "上坐过桥米线（滇池华府店）", lat: 24.9795, lng: 102.6988, kind: "food", desc: "" },
-          { time: "13:30–16:30", name: "宝丰湿地公园", lat: 24.9612, lng: 102.6825, kind: "spot", desc: "亦可改官渡古镇" },
-          { time: "17:00+", name: "牧兰盛·新亚洲店", lat: 25.0018, lng: 102.7046, kind: "food", desc: "牛小串烧烤" },
-          { time: "晚饭后", name: "返回酒店", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "" }
-        ],
-        legs: [
-          { from: 0, to: 1, label: "打车 ≈20min" },
-          { from: 1, to: 2, label: "打车 ≈9min" },
-          { from: 2, to: 3, label: "打车 ≈10min" },
-          { from: 3, to: 4, label: "打车 ≈9min" },
-          { from: 4, to: 5, label: "打车 ≈10–15min" }
-        ]
-      },
-      {
-        id: "d29",
-        date: "2026-08-29",
-        label: "周六 8/29",
-        title: "联大 · 云大 · 翠湖",
-        summary: "西南联大旧址 → 云大 → 山也 → 文林街/翠湖 → 祥云荟馆",
-        stops: [
-          { time: "09:00", name: "酒店出发", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "出发" },
-          { time: "09:30–10:00", name: "西南联大旧址", lat: 25.0603, lng: 102.7011, kind: "spot", desc: "" },
-          { time: "10:30–11:30", name: "云南大学东陆校区", lat: 25.0536, lng: 102.7038, kind: "spot", desc: "" },
-          { time: "12:00–13:00", name: "山也空间", lat: 25.0551, lng: 102.6934, kind: "food", desc: "歇脚咖啡" },
-          { time: "13:30–16:30", name: "文林街 + 翠湖", lat: 25.0530, lng: 102.6955, kind: "spot", desc: "经文林街" },
-          { time: "17:00–19:00", name: "祥云荟馆", lat: 25.0408, lng: 102.7102, kind: "food", desc: "" },
-          { time: "19:00+", name: "返回酒店", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "" }
-        ],
-        legs: [
-          { from: 0, to: 1, label: "打车 ≈30min" },
-          { from: 1, to: 2, label: "步行 ≈20min" },
-          { from: 2, to: 3, label: "步行 ≈12min" },
-          { from: 3, to: 4, label: "步行 ≈11min" },
-          { from: 4, to: 5, label: "打车 ≈20min" },
-          { from: 5, to: 6, label: "打车 ≈30min" }
-        ]
-      },
-      {
-        id: "d30",
-        date: "2026-08-30",
-        label: "周日 8/30",
-        title: "咖啡 · 划船 · 返程",
-        summary: "福保村 seainhicoffee → 海洪湿地划船 → 视航班返机场",
-        stops: [
-          { time: "09:00", name: "酒店出发", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "出发" },
-          { time: "10:00–11:00", name: "seainhicoffee（福保村）", lat: 24.9390, lng: 102.6915, kind: "food", desc: "地铁福保站附近，村内步行可达" },
-          { time: "11:30–12:00", name: "海洪湿地划船（北门）", lat: 24.9598, lng: 102.6825, kind: "spot", desc: "" },
-          { time: "午饭后", name: "返回酒店取行李", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "预留弹性" },
-          { time: "视航班", name: "昆明长水国际机场", lat: 25.1019, lng: 102.9292, kind: "transit", desc: "建议起飞前 3 小时抵达机场" }
-        ],
-        legs: [
-          { from: 0, to: 1, label: "打车+步行 ≈45min" },
-          { from: 1, to: 2, label: "打车 ≈20min" },
-          { from: 2, to: 3, label: "返回酒店" },
-          { from: 3, to: 4, label: "打车 ≈45–70min" }
-        ]
+        id: "kunming",
+        name: "昆明",
+        adcode: 530000,
+        lat: 25.04,
+        lng: 102.72,
+        href: "kunming.html",
+        region: "云南",
+        blurb: "四日路书"
       }
     ];
 
-    const WMO = {
-      0: "晴", 1: "大部晴朗", 2: "局部多云", 3: "阴天",
-      45: "雾", 48: "雾凇",
-      51: "小毛毛雨", 53: "毛毛雨", 55: "强毛毛雨",
-      61: "小雨", 63: "中雨", 65: "大雨",
-      80: "阵雨", 81: "中阵雨", 82: "强阵雨",
-      95: "雷阵雨", 96: "雷阵雨伴冰雹", 99: "强雷暴冰雹"
-    };
-
-    let map, layerGroup, activeDay = 0;
-    const weatherByDate = {};
+    const CHINA_VIEW = [[18.4, 73.6], [53.5, 135.0]];
+    const GEOJSON = "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json";
 
     function escapeHtml(s) {
       return String(s)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     }
 
-    function makeIcon(n, kind, name) {
-      const cls = ["spot", "hotel", "transit", "food"].includes(kind) ? kind : "spot";
-      const label = kind === "hotel" ? "酒店" : String(name);
-      const num = kind === "hotel" ? 1 : n;
-      const width = 40 + Math.min(label.length * 13, 280);
-      return L.divIcon({
-        className: "",
-        html: `<div class="mk-wrap"><div class="mk ${cls}">${num}</div><span class="mk-name">${escapeHtml(label)}</span></div>`,
-        iconSize: [width, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -15]
-      });
-    }
-
-    function makeRouteLabel(text) {
-      const width = Math.max(72, text.length * 8 + 20);
-      return L.divIcon({
-        className: "",
-        html: `<div class="route-label">${escapeHtml(text)}</div>`,
-        iconSize: [width, 22],
-        iconAnchor: [width / 2, 11]
-      });
-    }
-
-    function midLatLng(a, b) {
-      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-    }
-
-    // 高德底图用 GCJ-02；持仓坐标按 WGS-84 录入，绘制前转换以免偏位
     function wgs84ToGcj02(lng, lat) {
       const a = 6378245.0;
       const ee = 0.00669342162296594323;
@@ -501,161 +246,87 @@
       return [lat + dLat, lng + dLng];
     }
 
-    function toMapLatLng(s) {
-      return wgs84ToGcj02(s.lng, s.lat);
+    function cityByAdcode(adcode) {
+      return CITIES.find((c) => c.adcode === adcode);
     }
 
-    function formatCnDate(iso) {
-      const [y, m, d] = iso.split("-").map(Number);
-      return `${y}年${m}月${d}日`;
+    function provinceStyle(feature) {
+      const live = cityByAdcode(feature.properties.adcode);
+      return live ? {
+        color: "#f6ead0",
+        weight: 1.6,
+        fillColor: "#e2c48a",
+        fillOpacity: 1
+      } : {
+        color: "rgba(236, 220, 185, 0.38)",
+        weight: 0.85,
+        fillColor: "#35685b",
+        fillOpacity: 1
+      };
     }
 
-    function renderWeatherBoard() {
-      const board = document.getElementById("wxBoard");
-      board.innerHTML = "";
-      DAYS.forEach((d, i) => {
-        const w = weatherByDate[d.date];
-        const el = document.createElement("div");
-        el.className = "wx-day" + (i === activeDay ? " active" : "");
-        el.onclick = () => selectDay(i);
-        if (!w) {
-          el.innerHTML = `<div class="d">${d.label}</div><div class="t">—</div><div class="desc">天气加载中</div>`;
-        } else {
-          el.innerHTML = `
-            <div class="d">${d.label}</div>
-            <div class="t">${w.tMax}° / ${w.tMin}°</div>
-            <div class="desc">${w.desc}</div>
-            <div class="rain">降水 ${w.rain} mm</div>
-          `;
-        }
-        board.appendChild(el);
-      });
-    }
-
-    function renderTimeline() {
-      const d = DAYS[activeDay];
-      document.getElementById("listTitle").textContent = d.title;
-      document.getElementById("listMeta").textContent = formatCnDate(d.date);
-      document.getElementById("mapTitle").textContent = d.label + " · 路线地图";
-      const box = document.getElementById("timeline");
-      box.innerHTML = "";
-
-      d.stops.forEach((s, idx) => {
-        const stop = document.createElement("div");
-        stop.className = "stop";
-        stop.innerHTML = `
-          <div class="time">${s.time}</div>
-          <div>
-            <h3>${idx + 1}. ${s.name}</h3>
-            ${s.desc ? `<p>${s.desc}</p>` : ""}
+    function makeIcon(city) {
+      return L.divIcon({
+        className: "",
+        html: `<a class="spot" href="${escapeHtml(city.href)}" aria-label="进入${escapeHtml(city.name)}路书">
+          <div class="spot-core"></div>
+          <div class="spot-card">
+            <strong>${escapeHtml(city.name)}</strong>
+            <em>${escapeHtml(city.region)} · ${escapeHtml(city.blurb)}</em>
+            <span>进入路书 →</span>
           </div>
-        `;
-        stop.onclick = () => {
-          map.flyTo(toMapLatLng(s), 15, { duration: 0.6 });
-          document.querySelectorAll(".stop").forEach(x => x.classList.remove("active"));
-          stop.classList.add("active");
-        };
-        box.appendChild(stop);
-
-        const leg = d.legs.find(l => l.from === idx);
-        if (leg) {
-          const t = document.createElement("div");
-          t.className = "transit";
-          t.textContent = "↓ " + leg.label;
-          box.appendChild(t);
-        }
+        </a>`,
+        iconSize: [220, 86],
+        iconAnchor: [8, 22]
       });
     }
 
-    function drawDayOnMap() {
-      if (layerGroup) layerGroup.clearLayers();
-      else layerGroup = L.layerGroup().addTo(map);
-
-      const d = DAYS[activeDay];
-      const latlngs = d.stops.map(toMapLatLng);
-
-      layerGroup.addLayer(L.polyline(latlngs, {
-        color: "#0f6b5c",
-        weight: 3,
-        opacity: 0.9,
-        dashArray: "5 7",
-        lineCap: "round",
-        lineJoin: "round"
-      }));
-
-      d.legs.forEach((leg) => {
-        const a = latlngs[leg.from];
-        const b = latlngs[leg.to];
-        if (!a || !b) return;
-        layerGroup.addLayer(L.marker(midLatLng(a, b), {
-          icon: makeRouteLabel(leg.label),
-          interactive: false,
-          keyboard: false,
-          zIndexOffset: 200
-        }));
+    async function init() {
+      const map = L.map("map", {
+        zoomControl: false,
+        attributionControl: false,
+        scrollWheelZoom: true,
+        minZoom: 4,
+        maxZoom: 7,
+        zoomSnap: 0.25,
+        maxBounds: L.latLngBounds(CHINA_VIEW).pad(0.2),
+        maxBoundsViscosity: 0.85
       });
+      map.fitBounds(CHINA_VIEW, { padding: [18, 18], maxZoom: 6 });
 
-      d.stops.forEach((s, i) => {
-        const m = L.marker(toMapLatLng(s), {
-          icon: makeIcon(i + 1, s.kind, s.name),
-          zIndexOffset: 400
-        }).bindPopup(`
-          <div class="popup-time">${s.time}</div>
-          <div class="popup-title">${escapeHtml(s.name)}</div>
-          ${s.desc ? `<div class="popup-desc">${escapeHtml(s.desc)}</div>` : ""}
-        `);
-        layerGroup.addLayer(m);
-      });
-
-      map.fitBounds(latlngs, { padding: [56, 56], maxZoom: 14 });
-    }
-
-    function selectDay(i) {
-      activeDay = i;
-      renderWeatherBoard();
-      renderTimeline();
-      drawDayOnMap();
-    }
-
-    async function loadWeather() {
       try {
-        const url = "https://api.open-meteo.com/v1/forecast"
-          + "?latitude=25.04&longitude=102.72"
-          + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum"
-          + "&timezone=Asia%2FShanghai"
-          + "&start_date=2026-08-27&end_date=2026-08-30";
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        const daily = data.daily;
-        daily.time.forEach((date, i) => {
-          const code = daily.weather_code[i];
-          weatherByDate[date] = {
-            tMax: Math.round(daily.temperature_2m_max[i]),
-            tMin: Math.round(daily.temperature_2m_min[i]),
-            rain: (daily.precipitation_sum[i] ?? 0).toFixed(1),
-            desc: WMO[code] || ("天气代码 " + code)
-          };
+        const res = await fetch(GEOJSON);
+        if (!res.ok) throw new Error("geojson " + res.status);
+        const geo = await res.json();
+        L.geoJSON(geo, {
+          filter: (f) => f.properties.adchar !== "JD",
+          style: provinceStyle,
+          onEachFeature: (feature, layer) => {
+            const city = cityByAdcode(feature.properties.adcode);
+            if (!city) {
+              layer.options.interactive = false;
+              return;
+            }
+            layer.on("mouseover", () => layer.setStyle({ fillColor: "#f0d7a8" }));
+            layer.on("mouseout", () => layer.setStyle({ fillColor: "#e2c48a" }));
+            layer.on("click", () => { window.location.href = city.href; });
+          }
+        }).addTo(map);
+
+        CITIES.forEach((city) => {
+          L.marker(wgs84ToGcj02(city.lng, city.lat), {
+            icon: makeIcon(city),
+            keyboard: true,
+            zIndexOffset: 600
+          }).addTo(map);
         });
-      } catch (e) {
-        // weather cards stay as loading placeholders
+        requestAnimationFrame(() => map.invalidateSize());
+      } catch (err) {
+        document.getElementById("fail").style.display = "grid";
       }
-      renderWeatherBoard();
     }
 
-    function initMap() {
-      map = L.map("map", { scrollWheelZoom: true });
-      // 中文路网底图（高德）；标注统一为中文，避免 OSM 中英混杂
-      L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}", {
-        maxZoom: 18,
-        subdomains: "1234",
-        attribution: "&copy; 高德地图"
-      }).addTo(map);
-      selectDay(0);
-    }
-
-    initMap();
-    loadWeather();
+    init();
   </script>
 </body>
 </html>
