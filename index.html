@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>城市路书</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,11 +11,10 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --bg: #0d1311;
-      --ink: #f3eadc;
-      --muted: #9aafaa;
-      --gold: #efc27a;
-      --paper: rgba(246, 239, 226, 0.94);
+      --ink: #f4eadc;
+      --muted: #b7a894;
+      --gold: #d7b07a;
+      --paper: rgba(247, 241, 230, 0.94);
       --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
       --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
     }
@@ -27,18 +26,40 @@
     body {
       font-family: var(--sans);
       color: var(--ink);
-      background:
-        radial-gradient(ellipse at 50% 55%, #1a2c27 0%, #0d1311 62%);
       overflow: hidden;
+      background:
+        radial-gradient(ellipse 110% 70% at 50% -8%, rgba(212, 168, 98, 0.38), transparent 58%),
+        radial-gradient(ellipse 80% 45% at 50% 100%, rgba(58, 92, 78, 0.32), transparent 55%),
+        linear-gradient(180deg, #2a2218 0%, #141512 48%, #0e100f 100%);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.12;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(8, 8, 7, 0.28) 100%);
     }
     .wrap {
+      position: relative;
+      z-index: 2;
       height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 20px 12px 36px;
+      gap: 14px;
+      padding: 24px 16px 28px;
     }
     .brand {
       margin: 0;
@@ -49,20 +70,20 @@
       padding-right: 0.42em;
       white-space: nowrap;
       color: var(--ink);
-      animation: floaty 4.6s ease-in-out infinite;
+      animation: floaty 4.8s ease-in-out infinite;
       text-shadow:
-        0 10px 28px rgba(0, 0, 0, 0.35),
-        0 0 34px rgba(239, 194, 122, 0.16);
+        0 12px 30px rgba(0, 0, 0, 0.4),
+        0 0 40px rgba(215, 176, 122, 0.2);
       pointer-events: none;
     }
     @keyframes floaty {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-9px); }
+      50% { transform: translateY(-8px); }
     }
     .stage {
       position: relative;
       width: min(920px, 94vw);
-      height: min(640px, 70vh);
+      height: min(560px, 58vh);
       z-index: 1;
     }
     #map {
@@ -77,7 +98,7 @@
     }
     .leaflet-interactive { cursor: pointer; }
     .leaflet-overlay-pane {
-      filter: drop-shadow(0 22px 36px rgba(0, 0, 0, 0.32));
+      filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 24px rgba(215, 176, 122, 0.08));
     }
     .fly {
       position: absolute;
@@ -122,6 +143,52 @@
       font-size: 15px;
       letter-spacing: 0.12em;
     }
+    .dock {
+      width: min(440px, 94vw);
+      flex: 0 0 auto;
+      padding: 12px 14px 14px;
+      border-radius: 18px;
+      background: var(--paper);
+      color: #1c2421;
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.32),
+        0 0 0 1px rgba(215, 176, 122, 0.22);
+    }
+    .dock-kicker {
+      margin: 0 0 8px;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: #7a7266;
+    }
+    .dock-item {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+      padding: 8px 4px;
+      border-radius: 10px;
+    }
+    .dock-item:hover { background: rgba(215, 176, 122, 0.16); }
+    .dock-city {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+    }
+    .dock-dates {
+      color: #6b746e;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+    }
+    .dock-go {
+      margin-left: auto;
+      color: #8a5a24;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
     .fail {
       position: absolute;
       inset: 0;
@@ -132,8 +199,29 @@
     }
     .fail a { color: var(--gold); }
     @media (max-width: 640px) {
-      .brand { letter-spacing: 0.28em; padding-right: 0.28em; }
-      .stage { width: 96vw; height: 64vh; }
+      .wrap {
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 26px 0 0;
+      }
+      .brand {
+        letter-spacing: 0.28em;
+        padding-right: 0.28em;
+        font-size: 34px;
+      }
+      .stage {
+        width: 100%;
+        flex: 0 0 auto;
+        height: 46vh;
+      }
+      .dock {
+        width: 100%;
+        margin-top: auto;
+        border-radius: 22px 22px 0 0;
+        padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
+      }
+      .dock-city { font-size: 22px; }
+      .dock-item { padding: 12px 6px; }
     }
   </style>
 </head>
@@ -144,6 +232,10 @@
       <div id="map" role="application" aria-label="中国省份地图"></div>
       <div class="fly" id="fly" hidden></div>
     </div>
+    <nav class="dock" aria-label="已收录路书">
+      <p class="dock-kicker">已收录</p>
+      <div id="dockList"></div>
+    </nav>
   </div>
   <div class="fail" id="fail">地图加载失败，仍可 <a href="kunming.html">进入昆明路书</a></div>
 
@@ -166,12 +258,22 @@
       return GUIDES.filter((g) => g.adcode === code);
     }
 
+    function renderDock() {
+      document.getElementById("dockList").innerHTML = GUIDES.map((g) => `
+        <a class="dock-item" href="${escapeHtml(g.href)}">
+          <span class="dock-city">${escapeHtml(g.city)}</span>
+          <span class="dock-dates">${escapeHtml(g.dates)}</span>
+          <span class="dock-go">进入</span>
+        </a>
+      `).join("");
+    }
+
     function baseStyle() {
       return {
-        color: "rgba(255, 248, 236, 0.62)",
+        color: "rgba(244, 234, 220, 0.55)",
         weight: 1.05,
-        fillColor: "#ffffff",
-        fillOpacity: 0.14
+        fillColor: "#f4eadc",
+        fillOpacity: 0.16
       };
     }
 
@@ -190,6 +292,7 @@
     }
 
     async function init() {
+      renderDock();
       const mapEl = document.getElementById("map");
       const fly = document.getElementById("fly");
       const map = L.map(mapEl, {
@@ -254,7 +357,7 @@
           onEachFeature: (feature, province) => {
             province.on("mouseover", () => {
               if (selected === province) return;
-              province.setStyle({ fillOpacity: 0.24, weight: 1.25 });
+              province.setStyle({ fillOpacity: 0.26, weight: 1.25 });
             });
             province.on("mouseout", () => {
               if (selected === province) return;
@@ -267,7 +370,7 @@
           }
         }).addTo(map);
 
-        map.fitBounds(layer.getBounds(), { padding: [18, 18] });
+        map.fitBounds(layer.getBounds(), { padding: [16, 16] });
         map.on("click", hideFly);
         requestAnimationFrame(() => map.invalidateSize());
       } catch (err) {
