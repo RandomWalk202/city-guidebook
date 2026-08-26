@@ -93,41 +93,6 @@
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
     }
-    @media (max-width: 720px) {
-      .wrap { padding: 10px 10px 28px; }
-      header { gap: 4px; margin-bottom: 8px; }
-      .eyebrow { display: none; }
-      h1 { font-size: 22px; }
-      .wx-board { margin: 8px 0 10px; gap: 6px; }
-      .wx-day { padding: 8px 10px; }
-      .wx-day .t { font-size: 16px; }
-      .wx-day .rain { display: none; }
-      .map-card {
-        position: sticky;
-        top: 8px;
-        z-index: 40;
-      }
-      .map-card .legend,
-      .map-card .card-head .meta { display: none; }
-      .map-card .card-head { padding: 8px 12px; }
-      .map-card .card-head h2 { font-size: 14px; }
-      #map {
-        height: 34vh !important;
-        min-height: 210px !important;
-      }
-      .leaflet-tile-pane { opacity: 0.72; }
-      .leaflet-popup-content {
-        margin: 8px 10px;
-        min-width: 110px;
-        font-size: 12px;
-      }
-      .popup-title { font-size: 13px; }
-      .timeline {
-        max-height: none;
-        min-height: 0;
-      }
-      .layout { gap: 10px; margin-top: 8px; }
-    }
     .card {
       background: var(--card);
       border: 1px solid var(--line);
@@ -270,11 +235,17 @@
       border-top: 1px solid var(--line);
       background: #fffcf6;
     }
+    .list-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
     .timeline {
       padding: 8px 8px 16px;
       max-height: calc(100vh - 220px);
       min-height: 520px;
       overflow: auto;
+      flex: 1;
     }
     .stop {
       display: grid;
@@ -318,9 +289,6 @@
       gap: 10px;
       margin: 16px 0 14px;
     }
-    @media (max-width: 720px) {
-      .wx-board { grid-template-columns: 1fr 1fr; }
-    }
     .wx-day {
       background: var(--card);
       border: 1px solid var(--line);
@@ -353,6 +321,74 @@
       font-size: 12px;
       color: var(--rain);
     }
+    @media (max-width: 720px) {
+      html, body {
+        height: 100%;
+        overflow: hidden;
+      }
+      body { min-height: 100dvh; }
+      .wrap {
+        height: 100dvh;
+        max-height: 100dvh;
+        padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      header { gap: 2px; margin-bottom: 4px; flex: 0 0 auto; }
+      .eyebrow { display: none; }
+      h1 { font-size: 20px; }
+      .wx-board {
+        margin: 6px 0 8px;
+        gap: 6px;
+        flex: 0 0 auto;
+        grid-template-columns: repeat(4, minmax(108px, 1fr));
+        overflow-x: auto;
+      }
+      .wx-day { padding: 8px 10px; }
+      .wx-day .t { font-size: 15px; }
+      .wx-day .rain { display: none; }
+      .layout {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 0;
+      }
+      .map-card {
+        position: static;
+        flex: 0 0 auto;
+        z-index: 1;
+      }
+      .map-card .legend,
+      .map-card .card-head .meta { display: none; }
+      .map-card .card-head { padding: 8px 12px; }
+      .map-card .card-head h2 { font-size: 14px; }
+      #map {
+        height: 32vh !important;
+        min-height: 180px !important;
+      }
+      .leaflet-tile-pane { opacity: 0.72; }
+      .leaflet-popup-content {
+        margin: 8px 10px;
+        min-width: 110px;
+        font-size: 12px;
+      }
+      .popup-title { font-size: 13px; }
+      .list-card {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .timeline {
+        max-height: none;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
+    }
   </style>
 </head>
 <body>
@@ -381,7 +417,7 @@
         <div class="legend">圆点旁为站名 · 连线上为交通耗时</div>
       </section>
 
-      <section class="card">
+      <section class="card list-card">
         <div class="card-head">
           <h2 id="listTitle">当日行程</h2>
           <div class="meta" id="listMeta"></div>
