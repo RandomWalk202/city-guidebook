@@ -11,12 +11,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --bg: #0c1412;
-      --land: #1b3a33;
-      --land-line: rgba(232, 214, 176, 0.22);
-      --yunnan: #3b7d6c;
-      --yunnan-hover: #4a9480;
-      --yunnan-line: #e8c990;
+      --bg: #101816;
+      --land: #2c5a4f;
+      --land-line: rgba(236, 220, 185, 0.38);
+      --yunnan: #e2c48a;
+      --yunnan-hover: #f0d7a8;
+      --yunnan-line: #f6ead0;
       --ink: #f3eadc;
       --muted: #9aafaa;
       --gold: #efc27a;
@@ -32,13 +32,22 @@
       font-family: var(--sans);
     }
     body { overflow: hidden; }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(ellipse at 48% 52%, #1c332c 0%, #101816 62%);
+    }
     #map {
       position: absolute;
       inset: 0;
-      background: var(--bg);
+      z-index: 1;
+      background: transparent;
     }
     .leaflet-container {
-      background: var(--bg) !important;
+      background: transparent !important;
       font-family: var(--sans);
     }
     .leaflet-div-icon {
@@ -46,16 +55,17 @@
       border: none !important;
     }
     .leaflet-overlay-pane {
-      filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.35));
+      filter: drop-shadow(0 28px 40px rgba(0, 0, 0, 0.4));
     }
     .overlay {
       position: absolute;
       z-index: 500;
-      top: 36px;
-      left: 40px;
-      max-width: min(420px, calc(100% - 48px));
+      top: 0;
+      left: 0;
+      max-width: min(460px, calc(100% - 24px));
+      padding: 36px 48px 28px 40px;
       pointer-events: none;
-      text-shadow: 0 10px 28px rgba(12, 20, 18, 0.55);
+      background: linear-gradient(90deg, rgba(16, 24, 22, 0.82) 0%, rgba(16, 24, 22, 0.35) 70%, transparent 100%);
     }
     .brand {
       margin: 0;
@@ -122,38 +132,37 @@
       100% { transform: scale(1.55); opacity: 0; }
     }
     .spot-card {
-      min-width: 148px;
+      min-width: 158px;
       padding: 12px 14px 13px;
-      border-radius: 14px;
-      background: rgba(15, 24, 22, 0.82);
-      border: 1px solid rgba(243, 234, 220, 0.14);
-      backdrop-filter: blur(10px);
-      color: var(--ink);
+      border-radius: 16px;
+      background: #f6efe2;
+      color: #1c2421;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
     }
     .spot-card strong {
       display: block;
       font-family: var(--serif);
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
     }
     .spot-card em {
       display: block;
       margin-top: 3px;
       font-style: normal;
       font-size: 12px;
-      color: var(--muted);
+      color: #5c6b64;
     }
     .spot-card span {
       display: inline-block;
-      margin-top: 8px;
+      margin-top: 9px;
       font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.08em;
-      color: var(--gold);
+      letter-spacing: 0.1em;
+      color: #8a5a24;
     }
     .spot:hover .spot-card {
-      border-color: rgba(239, 194, 122, 0.55);
+      transform: translateY(-1px);
     }
     .fail {
       position: absolute;
@@ -244,14 +253,14 @@
     function provinceStyle(feature) {
       const live = cityByAdcode(feature.properties.adcode);
       return live ? {
-        color: "#e8c990",
-        weight: 1.4,
-        fillColor: "#3b7d6c",
+        color: "#f6ead0",
+        weight: 1.6,
+        fillColor: "#e2c48a",
         fillOpacity: 1
       } : {
-        color: "rgba(232, 214, 176, 0.22)",
-        weight: 0.7,
-        fillColor: "#1b3a33",
+        color: "rgba(236, 220, 185, 0.38)",
+        weight: 0.85,
+        fillColor: "#35685b",
         fillOpacity: 1
       };
     }
@@ -283,7 +292,7 @@
         maxBounds: L.latLngBounds(CHINA_VIEW).pad(0.2),
         maxBoundsViscosity: 0.85
       });
-      map.fitBounds(CHINA_VIEW, { padding: [48, 48], maxZoom: 5.2 });
+      map.fitBounds(CHINA_VIEW, { padding: [18, 18], maxZoom: 6 });
 
       try {
         const res = await fetch(GEOJSON);
@@ -298,8 +307,8 @@
               layer.options.interactive = false;
               return;
             }
-            layer.on("mouseover", () => layer.setStyle({ fillColor: "#4a9480" }));
-            layer.on("mouseout", () => layer.setStyle({ fillColor: "#3b7d6c" }));
+            layer.on("mouseover", () => layer.setStyle({ fillColor: "#f0d7a8" }));
+            layer.on("mouseout", () => layer.setStyle({ fillColor: "#e2c48a" }));
             layer.on("click", () => { window.location.href = city.href; });
           }
         }).addTo(map);
