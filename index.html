@@ -205,7 +205,7 @@
     ];
 
     const CHINA_VIEW = [[18.4, 73.6], [53.5, 135.0]];
-    const GEOJSON = "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json";
+    const GEOJSON = "china.json";
 
     function escapeHtml(s) {
       return String(s)
@@ -247,7 +247,8 @@
     }
 
     function cityByAdcode(adcode) {
-      return CITIES.find((c) => c.adcode === adcode);
+      const code = Number(adcode);
+      return CITIES.find((c) => c.adcode === code);
     }
 
     function provinceStyle(feature) {
@@ -299,7 +300,6 @@
         if (!res.ok) throw new Error("geojson " + res.status);
         const geo = await res.json();
         L.geoJSON(geo, {
-          filter: (f) => f.properties.adchar !== "JD",
           style: provinceStyle,
           onEachFeature: (feature, layer) => {
             const city = cityByAdcode(feature.properties.adcode);
