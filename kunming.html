@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>昆明路书 · 城市路书</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -19,7 +22,8 @@
       --rain: #3d6f8c;
       --shadow: 0 10px 30px rgba(28, 36, 33, 0.08);
       --radius: 16px;
-      --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
     }
     * { box-sizing: border-box; }
     body {
@@ -51,11 +55,12 @@
     .crumb a {
       color: var(--accent);
       text-decoration: none;
-      font-size: 13px;
-      font-weight: 650;
-      letter-spacing: 0.04em;
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
     }
-    .crumb a:hover { text-decoration: underline; }
+    .crumb a:hover { opacity: 0.75; }
     .crumb .sep {
       color: var(--line);
       font-size: 12px;
@@ -63,20 +68,21 @@
     .crumb .here {
       color: var(--muted);
       font-size: 13px;
-      font-weight: 650;
+      letter-spacing: 0.16em;
     }
     .eyebrow {
       color: var(--accent);
-      font-size: 13px;
-      letter-spacing: 0.12em;
+      font-size: 12px;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       font-weight: 600;
     }
     h1 {
       margin: 0;
-      font-size: clamp(28px, 4vw, 40px);
+      font-family: var(--serif);
+      font-size: clamp(30px, 4vw, 42px);
       line-height: 1.15;
-      letter-spacing: -0.02em;
+      letter-spacing: 0.02em;
     }
     .layout {
       display: grid;
@@ -319,7 +325,7 @@
   <div class="wrap">
     <header>
       <nav class="crumb" aria-label="面包屑">
-        <a href="./">← 城市路书</a>
+        <a href="./">城市路书</a>
         <span class="sep">/</span>
         <span class="here">昆明</span>
       </nav>
