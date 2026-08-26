@@ -11,15 +11,11 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --bg: #101816;
-      --land: #2c5a4f;
-      --land-line: rgba(236, 220, 185, 0.38);
-      --yunnan: #e2c48a;
-      --yunnan-hover: #f0d7a8;
-      --yunnan-line: #f6ead0;
+      --bg: #0d1311;
       --ink: #f3eadc;
       --muted: #9aafaa;
       --gold: #efc27a;
+      --paper: rgba(246, 239, 226, 0.94);
       --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
       --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
     }
@@ -27,185 +23,136 @@
     html, body {
       margin: 0;
       height: 100%;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: var(--sans);
     }
-    body { overflow: hidden; }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
+    body {
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 50% 55%, #1a2c27 0%, #0d1311 62%);
+      overflow: hidden;
+    }
+    .wrap {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 20px 12px 36px;
+    }
+    .brand {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 700;
+      letter-spacing: 0.42em;
+      padding-right: 0.42em;
+      white-space: nowrap;
+      color: var(--ink);
+      animation: floaty 4.6s ease-in-out infinite;
+      text-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.35),
+        0 0 34px rgba(239, 194, 122, 0.16);
       pointer-events: none;
-      z-index: 0;
-      background: radial-gradient(ellipse at 48% 52%, #1c332c 0%, #101816 62%);
+    }
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-9px); }
+    }
+    .stage {
+      position: relative;
+      width: min(920px, 94vw);
+      height: min(640px, 70vh);
+      z-index: 1;
     }
     #map {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
+      width: 100%;
+      height: 100%;
       background: transparent;
     }
     .leaflet-container {
       background: transparent !important;
       font-family: var(--sans);
+      cursor: default;
     }
-    .leaflet-div-icon {
-      background: transparent !important;
-      border: none !important;
-    }
+    .leaflet-interactive { cursor: pointer; }
     .leaflet-overlay-pane {
-      filter: drop-shadow(0 28px 40px rgba(0, 0, 0, 0.4));
+      filter: drop-shadow(0 22px 36px rgba(0, 0, 0, 0.32));
     }
-    .overlay {
+    .fly {
       position: absolute;
-      z-index: 500;
-      top: 0;
-      left: 0;
-      max-width: min(460px, calc(100% - 24px));
-      padding: 36px 48px 28px 40px;
-      pointer-events: none;
-      background: linear-gradient(90deg, rgba(16, 24, 22, 0.82) 0%, rgba(16, 24, 22, 0.35) 70%, transparent 100%);
-    }
-    .brand {
-      margin: 0;
-      font-size: 12px;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: var(--gold);
-      font-weight: 600;
-    }
-    h1 {
-      margin: 10px 0 0;
-      font-family: var(--serif);
-      font-size: clamp(40px, 6vw, 68px);
-      font-weight: 700;
-      line-height: 1.05;
-      letter-spacing: 0.04em;
-    }
-    .lede {
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 15px;
-      letter-spacing: 0.04em;
-    }
-    .hint {
-      position: absolute;
-      z-index: 500;
-      left: 50%;
-      bottom: 28px;
-      transform: translateX(-50%);
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-      letter-spacing: 0.12em;
-      pointer-events: none;
-    }
-    .spot {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      cursor: pointer;
-      filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.35));
-    }
-    .spot-core {
-      position: relative;
-      flex: 0 0 16px;
-      width: 16px;
-      height: 16px;
-      margin-top: 14px;
-      border-radius: 50%;
-      background: var(--gold);
-      border: 2px solid #fff8ea;
-      box-shadow: 0 0 0 6px rgba(239, 194, 122, 0.18);
-    }
-    .spot-core::after {
-      content: "";
-      position: absolute;
-      inset: -14px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(239, 194, 122, 0.7);
-      animation: pulse 2.4s ease-out infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(0.55); opacity: 0.85; }
-      100% { transform: scale(1.55); opacity: 0; }
-    }
-    .spot-card {
-      min-width: 158px;
-      padding: 12px 14px 13px;
-      border-radius: 16px;
-      background: #f6efe2;
+      z-index: 30;
+      min-width: 196px;
+      max-width: 240px;
+      padding: 14px 16px 12px;
+      border-radius: 14px;
+      background: var(--paper);
       color: #1c2421;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+      display: none;
+      animation: rise 0.22s ease;
     }
-    .spot-card strong {
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fly .prov {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      color: #6b746e;
+    }
+    .fly a {
       display: block;
+      color: #1c2421;
+      text-decoration: none;
       font-family: var(--serif);
-      font-size: 22px;
+      font-size: 16px;
       font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 6px 0;
+      border-top: 1px solid rgba(28, 36, 33, 0.08);
+    }
+    .fly a:hover { color: #8a5a24; }
+    .fly .wait {
+      margin: 0;
+      padding: 6px 0 2px;
+      border-top: 1px solid rgba(28, 36, 33, 0.08);
+      color: #6b746e;
+      font-size: 15px;
       letter-spacing: 0.12em;
-    }
-    .spot-card em {
-      display: block;
-      margin-top: 3px;
-      font-style: normal;
-      font-size: 12px;
-      color: #5c6b64;
-    }
-    .spot-card span {
-      display: inline-block;
-      margin-top: 9px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: #8a5a24;
-    }
-    .spot:hover .spot-card {
-      transform: translateY(-1px);
     }
     .fail {
       position: absolute;
       inset: 0;
       display: none;
       place-items: center;
-      z-index: 400;
+      z-index: 40;
       color: var(--muted);
     }
     .fail a { color: var(--gold); }
     @media (max-width: 640px) {
-      .overlay { top: 22px; left: 20px; }
-      h1 { font-size: 40px; }
-      .hint { bottom: 18px; font-size: 12px; }
+      .brand { letter-spacing: 0.28em; padding-right: 0.28em; }
+      .stage { width: 96vw; height: 64vh; }
     }
   </style>
 </head>
 <body>
-  <div id="map" role="application" aria-label="中国城市地图"></div>
-  <header class="overlay">
-    <p class="brand">Field Notes</p>
-    <h1>城市路书</h1>
-    <p class="lede">一张地图，记下路过的城</p>
-  </header>
-  <p class="hint">点击昆明 · 进入路书</p>
+  <div class="wrap">
+    <h1 class="brand">城市路书</h1>
+    <div class="stage">
+      <div id="map" role="application" aria-label="中国省份地图"></div>
+      <div class="fly" id="fly" hidden></div>
+    </div>
+  </div>
   <div class="fail" id="fail">地图加载失败，仍可 <a href="kunming.html">进入昆明路书</a></div>
 
   <script>
-    const CITIES = [
-      {
-        id: "kunming",
-        name: "昆明",
-        adcode: 530000,
-        lat: 25.04,
-        lng: 102.72,
-        href: "kunming.html",
-        region: "云南",
-        blurb: "四日路书"
-      }
+    const GUIDES = [
+      { adcode: 530000, city: "昆明", dates: "20260827-0829", href: "kunming.html" }
     ];
 
-    const CHINA_VIEW = [[18.4, 73.6], [53.5, 135.0]];
-    const GEOJSON = "china.json";
+    const CHINA_VIEW = [[18.15, 73.5], [53.55, 135.05]];
 
     function escapeHtml(s) {
       return String(s)
@@ -214,112 +161,114 @@
         .replace(/"/g, "&quot;");
     }
 
-    function wgs84ToGcj02(lng, lat) {
-      const a = 6378245.0;
-      const ee = 0.00669342162296594323;
-      function outOfChina(x, y) {
-        return x < 72.004 || x > 137.8347 || y < 0.8293 || y > 55.8271;
-      }
-      function transformLat(x, y) {
-        let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-        ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
-        ret += (20.0 * Math.sin(y * Math.PI) + 40.0 * Math.sin(y / 3.0 * Math.PI)) * 2.0 / 3.0;
-        ret += (160.0 * Math.sin(y / 12.0 * Math.PI) + 320 * Math.sin(y * Math.PI / 30.0)) * 2.0 / 3.0;
-        return ret;
-      }
-      function transformLng(x, y) {
-        let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
-        ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
-        ret += (20.0 * Math.sin(x * Math.PI) + 40.0 * Math.sin(x / 3.0 * Math.PI)) * 2.0 / 3.0;
-        ret += (150.0 * Math.sin(x / 12.0 * Math.PI) + 300.0 * Math.sin(x / 30.0 * Math.PI)) * 2.0 / 3.0;
-        return ret;
-      }
-      if (outOfChina(lng, lat)) return [lat, lng];
-      let dLat = transformLat(lng - 105.0, lat - 35.0);
-      let dLng = transformLng(lng - 105.0, lat - 35.0);
-      const radLat = lat / 180.0 * Math.PI;
-      let magic = Math.sin(radLat);
-      magic = 1 - ee * magic * magic;
-      const sqrtMagic = Math.sqrt(magic);
-      dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * Math.PI);
-      dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * Math.PI);
-      return [lat + dLat, lng + dLng];
-    }
-
-    function cityByAdcode(adcode) {
+    function guidesFor(adcode) {
       const code = Number(adcode);
-      return CITIES.find((c) => c.adcode === code);
+      return GUIDES.filter((g) => g.adcode === code);
     }
 
-    function provinceStyle(feature) {
-      const live = cityByAdcode(feature.properties.adcode);
-      return live ? {
-        color: "#f6ead0",
-        weight: 1.6,
-        fillColor: "#e2c48a",
-        fillOpacity: 1
-      } : {
-        color: "rgba(236, 220, 185, 0.38)",
-        weight: 0.85,
-        fillColor: "#35685b",
-        fillOpacity: 1
+    function baseStyle() {
+      return {
+        color: "rgba(255, 248, 236, 0.62)",
+        weight: 1.05,
+        fillColor: "#ffffff",
+        fillOpacity: 0.14
       };
     }
 
-    function makeIcon(city) {
-      return L.divIcon({
-        className: "",
-        html: `<a class="spot" href="${escapeHtml(city.href)}" aria-label="进入${escapeHtml(city.name)}路书">
-          <div class="spot-core"></div>
-          <div class="spot-card">
-            <strong>${escapeHtml(city.name)}</strong>
-            <em>${escapeHtml(city.region)} · ${escapeHtml(city.blurb)}</em>
-            <span>进入路书 →</span>
-          </div>
-        </a>`,
-        iconSize: [220, 86],
-        iconAnchor: [8, 22]
-      });
+    function activeStyle(hasGuides) {
+      return hasGuides ? {
+        color: "#f6ead0",
+        weight: 1.8,
+        fillColor: "#e2c48a",
+        fillOpacity: 0.88
+      } : {
+        color: "rgba(243, 234, 220, 0.9)",
+        weight: 1.5,
+        fillColor: "#f3eadc",
+        fillOpacity: 0.28
+      };
     }
 
     async function init() {
-      const map = L.map("map", {
+      const mapEl = document.getElementById("map");
+      const fly = document.getElementById("fly");
+      const map = L.map(mapEl, {
         zoomControl: false,
         attributionControl: false,
-        scrollWheelZoom: true,
-        minZoom: 4,
-        maxZoom: 7,
-        zoomSnap: 0.25,
-        maxBounds: L.latLngBounds(CHINA_VIEW).pad(0.2),
-        maxBoundsViscosity: 0.85
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        zoomSnap: 0.1
       });
-      map.fitBounds(CHINA_VIEW, { padding: [18, 18], maxZoom: 6 });
+      map.fitBounds(CHINA_VIEW, { padding: [12, 12], maxZoom: 6 });
+
+      let selected = null;
+
+      function hideFly() {
+        fly.hidden = true;
+        fly.style.display = "none";
+        if (selected) {
+          selected.setStyle(baseStyle());
+          selected = null;
+        }
+      }
+
+      function placeFly(layer) {
+        const pt = map.latLngToContainerPoint(layer.getBounds().getCenter());
+        const w = fly.offsetWidth || 200;
+        const h = fly.offsetHeight || 90;
+        const maxX = mapEl.clientWidth - w - 8;
+        const maxY = mapEl.clientHeight - h - 8;
+        fly.style.left = Math.max(8, Math.min(pt.x + 16, maxX)) + "px";
+        fly.style.top = Math.max(8, Math.min(pt.y - 18, maxY)) + "px";
+      }
+
+      function openProvince(layer, feature) {
+        const guides = guidesFor(feature.properties.adcode);
+        if (selected && selected !== layer) selected.setStyle(baseStyle());
+        selected = layer;
+        layer.setStyle(activeStyle(guides.length > 0));
+        layer.bringToFront();
+
+        const name = feature.properties.name || "";
+        if (guides.length) {
+          fly.innerHTML = `<p class="prov">${escapeHtml(name)}</p>` + guides.map((g) =>
+            `<a href="${escapeHtml(g.href)}">${escapeHtml(g.city)}｜${escapeHtml(g.dates)}</a>`
+          ).join("");
+        } else {
+          fly.innerHTML = `<p class="prov">${escapeHtml(name)}</p><p class="wait">期待解锁</p>`;
+        }
+        fly.hidden = false;
+        fly.style.display = "block";
+        placeFly(layer);
+      }
 
       try {
-        const res = await fetch(GEOJSON);
+        const res = await fetch("china.json");
         if (!res.ok) throw new Error("geojson " + res.status);
         const geo = await res.json();
-        L.geoJSON(geo, {
-          style: provinceStyle,
-          onEachFeature: (feature, layer) => {
-            const city = cityByAdcode(feature.properties.adcode);
-            if (!city) {
-              layer.options.interactive = false;
-              return;
-            }
-            layer.on("mouseover", () => layer.setStyle({ fillColor: "#f0d7a8" }));
-            layer.on("mouseout", () => layer.setStyle({ fillColor: "#e2c48a" }));
-            layer.on("click", () => { window.location.href = city.href; });
+        const layer = L.geoJSON(geo, {
+          style: baseStyle,
+          onEachFeature: (feature, province) => {
+            province.on("mouseover", () => {
+              if (selected === province) return;
+              province.setStyle({ fillOpacity: 0.24, weight: 1.25 });
+            });
+            province.on("mouseout", () => {
+              if (selected === province) return;
+              province.setStyle(baseStyle());
+            });
+            province.on("click", (e) => {
+              L.DomEvent.stopPropagation(e);
+              openProvince(province, feature);
+            });
           }
         }).addTo(map);
 
-        CITIES.forEach((city) => {
-          L.marker(wgs84ToGcj02(city.lng, city.lat), {
-            icon: makeIcon(city),
-            keyboard: true,
-            zIndexOffset: 600
-          }).addTo(map);
-        });
+        map.fitBounds(layer.getBounds(), { padding: [18, 18] });
+        map.on("click", hideFly);
         requestAnimationFrame(() => map.invalidateSize());
       } catch (err) {
         document.getElementById("fail").style.display = "grid";
