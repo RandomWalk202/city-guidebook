@@ -11,80 +11,69 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --ink: #f4eadc;
-      --muted: #b7a894;
-      --gold: #d7b07a;
-      --paper: rgba(247, 241, 230, 0.94);
+      --bg: #f3f0e8;
+      --ink: #1c2421;
+      --muted: #5c6b64;
+      --line: #d9d2c4;
+      --card: #fffcf6;
+      --accent: #0f6b5c;
+      --warm: #c45c26;
+      --sage: #5e8a79;
       --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
       --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
     }
     * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      height: 100%;
-    }
+    html, body { margin: 0; min-height: 100%; }
     body {
       font-family: var(--sans);
       color: var(--ink);
-      overflow: hidden;
       background:
-        radial-gradient(ellipse 110% 70% at 50% -8%, rgba(212, 168, 98, 0.38), transparent 58%),
-        radial-gradient(ellipse 80% 45% at 50% 100%, rgba(58, 92, 78, 0.32), transparent 55%),
-        linear-gradient(180deg, #2a2218 0%, #141512 48%, #0e100f 100%);
+        radial-gradient(1200px 600px at 8% -10%, #e7f3ef 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #f7e8dc 0%, transparent 50%),
+        var(--bg);
     }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.12;
-      mix-blend-mode: overlay;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 36px 28px 56px;
     }
-    body::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 1;
-      background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(8, 8, 7, 0.28) 100%);
-    }
-    .wrap {
-      position: relative;
-      z-index: 2;
-      height: 100%;
+    header {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 24px 16px 28px;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 28px;
     }
-    .brand {
+    .mark {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0.28em;
+    }
+    h1 {
       margin: 0;
       font-family: var(--serif);
-      font-size: clamp(32px, 5vw, 52px);
+      font-size: clamp(36px, 5vw, 56px);
       font-weight: 700;
-      letter-spacing: 0.42em;
-      padding-right: 0.42em;
-      white-space: nowrap;
-      color: var(--ink);
-      animation: floaty 4.8s ease-in-out infinite;
-      text-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.4),
-        0 0 40px rgba(215, 176, 122, 0.2);
-      pointer-events: none;
+      letter-spacing: 0.08em;
+      line-height: 1.1;
     }
-    @keyframes floaty {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      padding-bottom: 8px;
     }
-    .stage {
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 40px;
+      align-items: center;
+    }
+    .atlas {
       position: relative;
-      width: min(920px, 94vw);
-      height: min(560px, 58vh);
-      z-index: 1;
+      height: min(640px, 68vh);
     }
     #map {
       width: 100%;
@@ -98,150 +87,120 @@
     }
     .leaflet-interactive { cursor: pointer; }
     .leaflet-overlay-pane {
-      filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 24px rgba(215, 176, 122, 0.08));
+      filter: drop-shadow(0 18px 28px rgba(28, 36, 33, 0.12));
+    }
+    .index {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 28px 26px 22px;
+      box-shadow: 0 10px 30px rgba(28, 36, 33, 0.06);
+    }
+    .index-kicker {
+      margin: 0 0 18px;
+      font-size: 12px;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+    }
+    .index-item {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+    .index-item:first-of-type { border-top: 0; padding-top: 0; }
+    .index-city {
+      display: block;
+      font-family: var(--serif);
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+    .index-meta {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .index-go {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--warm);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
     }
     .fly {
       position: absolute;
       z-index: 30;
-      min-width: 196px;
-      max-width: 240px;
-      padding: 14px 16px 12px;
-      border-radius: 14px;
-      background: var(--paper);
-      color: #1c2421;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+      min-width: 180px;
+      padding: 12px 14px 10px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 28px rgba(28, 36, 33, 0.12);
       display: none;
-      animation: rise 0.22s ease;
-    }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     .fly .prov {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       font-size: 12px;
-      letter-spacing: 0.16em;
-      color: #6b746e;
-    }
-    .fly a {
-      display: block;
-      color: #1c2421;
-      text-decoration: none;
-      font-family: var(--serif);
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      padding: 6px 0;
-      border-top: 1px solid rgba(28, 36, 33, 0.08);
-    }
-    .fly a:hover { color: #8a5a24; }
-    .fly .wait {
-      margin: 0;
-      padding: 6px 0 2px;
-      border-top: 1px solid rgba(28, 36, 33, 0.08);
-      color: #6b746e;
-      font-size: 15px;
-      letter-spacing: 0.12em;
-    }
-    .dock {
-      width: min(440px, 94vw);
-      flex: 0 0 auto;
-      padding: 12px 14px 14px;
-      border-radius: 18px;
-      background: var(--paper);
-      color: #1c2421;
-      box-shadow:
-        0 18px 40px rgba(0, 0, 0, 0.32),
-        0 0 0 1px rgba(215, 176, 122, 0.22);
-    }
-    .dock-kicker {
-      margin: 0 0 8px;
-      font-size: 11px;
-      letter-spacing: 0.22em;
-      color: #7a7266;
-    }
-    .dock-item {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      text-decoration: none;
-      color: inherit;
-      padding: 8px 4px;
-      border-radius: 10px;
-    }
-    .dock-item:hover { background: rgba(215, 176, 122, 0.16); }
-    .dock-city {
-      font-family: var(--serif);
-      font-size: 20px;
-      font-weight: 700;
       letter-spacing: 0.14em;
-    }
-    .dock-dates {
-      color: #6b746e;
-      font-size: 13px;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.04em;
-    }
-    .dock-go {
-      margin-left: auto;
-      color: #8a5a24;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-    }
-    .fail {
-      position: absolute;
-      inset: 0;
-      display: none;
-      place-items: center;
-      z-index: 40;
       color: var(--muted);
     }
-    .fail a { color: var(--gold); }
-    @media (max-width: 640px) {
-      .wrap {
-        justify-content: flex-start;
-        gap: 10px;
-        padding: 26px 0 0;
+    .fly a {
+      color: var(--ink);
+      text-decoration: none;
+      font-family: var(--serif);
+      font-weight: 700;
+    }
+    .fly .wait { margin: 0; color: var(--muted); }
+    .fail {
+      display: none;
+      margin-top: 20px;
+      color: var(--muted);
+    }
+    .fail a { color: var(--accent); }
+    @media (max-width: 800px) {
+      .page { padding: 22px 16px calc(28px + env(safe-area-inset-bottom)); }
+      header { align-items: flex-start; margin-bottom: 12px; }
+      h1 { font-size: 34px; letter-spacing: 0.06em; }
+      .count { padding-bottom: 0; }
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 16px;
       }
-      .brand {
-        letter-spacing: 0.28em;
-        padding-right: 0.28em;
-        font-size: 34px;
-      }
-      .stage {
-        width: 100%;
-        flex: 0 0 auto;
-        height: 46vh;
-      }
-      .dock {
-        width: 100%;
-        margin-top: auto;
-        border-radius: 22px 22px 0 0;
-        padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
-      }
-      .dock-city { font-size: 22px; }
-      .dock-item { padding: 12px 6px; }
+      .atlas { height: 46vh; min-height: 280px; }
+      .index { padding: 20px 18px 16px; }
+      .index-city { font-size: 28px; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1 class="brand">城市路书</h1>
-    <div class="stage">
-      <div id="map" role="application" aria-label="中国省份地图"></div>
-      <div class="fly" id="fly" hidden></div>
+  <div class="page">
+    <header>
+      <div>
+        <p class="mark">FIELD NOTES</p>
+        <h1>城市路书</h1>
+      </div>
+      <div class="count" id="guideCount"></div>
+    </header>
+    <div class="hero">
+      <div class="atlas">
+        <div id="map" role="img" aria-label="中国地图"></div>
+        <div class="fly" id="fly" hidden></div>
+      </div>
+      <aside class="index" aria-label="已收录路书">
+        <p class="index-kicker">目录</p>
+        <div id="dockList"></div>
+      </aside>
     </div>
-    <nav class="dock" aria-label="已收录路书">
-      <p class="dock-kicker">已收录</p>
-      <div id="dockList"></div>
-    </nav>
+    <p class="fail" id="fail">地图加载失败，仍可从目录进入昆明路书</p>
   </div>
-  <div class="fail" id="fail">地图加载失败，仍可 <a href="kunming.html">进入昆明路书</a></div>
 
   <script>
     const GUIDES = [
-      { adcode: 530000, city: "昆明", dates: "20260827-0829", href: "kunming.html" }
+      { adcode: 530000, city: "昆明", region: "云南", dates: "2026.8.27–8.29", href: "kunming.html" }
     ];
 
     const CHINA_VIEW = [[18.15, 73.5], [53.55, 135.05]];
@@ -254,45 +213,51 @@
     }
 
     function guidesFor(adcode) {
-      const code = Number(adcode);
-      return GUIDES.filter((g) => g.adcode === code);
+      return GUIDES.filter((g) => g.adcode === Number(adcode));
     }
 
-    function renderDock() {
+    function renderIndex() {
+      document.getElementById("guideCount").textContent = "已收录 " + GUIDES.length + " 城";
       document.getElementById("dockList").innerHTML = GUIDES.map((g) => `
-        <a class="dock-item" href="${escapeHtml(g.href)}">
-          <span class="dock-city">${escapeHtml(g.city)}</span>
-          <span class="dock-dates">${escapeHtml(g.dates)}</span>
-          <span class="dock-go">进入</span>
+        <a class="index-item" href="${escapeHtml(g.href)}">
+          <span class="index-city">${escapeHtml(g.city)}</span>
+          <span class="index-meta">${escapeHtml(g.region)} · ${escapeHtml(g.dates)}</span>
+          <span class="index-go">进入路书 →</span>
         </a>
       `).join("");
     }
 
-    function baseStyle() {
-      return {
-        color: "rgba(244, 234, 220, 0.55)",
-        weight: 1.05,
-        fillColor: "#f4eadc",
-        fillOpacity: 0.16
+    function baseStyle(feature) {
+      const live = guidesFor(feature.properties.adcode).length > 0;
+      return live ? {
+        color: "#f3f0e8",
+        weight: 1.2,
+        fillColor: "#c45c26",
+        fillOpacity: 0.92
+      } : {
+        color: "#f3f0e8",
+        weight: 1,
+        fillColor: "#5e8a79",
+        fillOpacity: 0.88
       };
     }
 
     function activeStyle(hasGuides) {
       return hasGuides ? {
-        color: "#f6ead0",
+        color: "#fff8ef",
         weight: 1.8,
-        fillColor: "#e2c48a",
-        fillOpacity: 0.88
+        fillColor: "#a64b1d",
+        fillOpacity: 1
       } : {
-        color: "rgba(243, 234, 220, 0.9)",
+        color: "#fff8ef",
         weight: 1.5,
-        fillColor: "#f3eadc",
-        fillOpacity: 0.28
+        fillColor: "#3f6b5c",
+        fillOpacity: 1
       };
     }
 
     async function init() {
-      renderDock();
+      renderIndex();
       const mapEl = document.getElementById("map");
       const fly = document.getElementById("fly");
       const map = L.map(mapEl, {
@@ -305,7 +270,7 @@
         keyboard: false,
         zoomSnap: 0.1
       });
-      map.fitBounds(CHINA_VIEW, { padding: [12, 12], maxZoom: 6 });
+      map.fitBounds(CHINA_VIEW, { padding: [8, 8], maxZoom: 6 });
 
       let selected = null;
 
@@ -313,36 +278,31 @@
         fly.hidden = true;
         fly.style.display = "none";
         if (selected) {
-          selected.setStyle(baseStyle());
+          selected.setStyle(baseStyle(selected.feature));
           selected = null;
         }
       }
 
       function placeFly(layer) {
         const pt = map.latLngToContainerPoint(layer.getBounds().getCenter());
-        const w = fly.offsetWidth || 200;
-        const h = fly.offsetHeight || 90;
-        const maxX = mapEl.clientWidth - w - 8;
-        const maxY = mapEl.clientHeight - h - 8;
-        fly.style.left = Math.max(8, Math.min(pt.x + 16, maxX)) + "px";
-        fly.style.top = Math.max(8, Math.min(pt.y - 18, maxY)) + "px";
+        const w = fly.offsetWidth || 180;
+        const h = fly.offsetHeight || 80;
+        fly.style.left = Math.max(8, Math.min(pt.x + 14, mapEl.clientWidth - w - 8)) + "px";
+        fly.style.top = Math.max(8, Math.min(pt.y - 12, mapEl.clientHeight - h - 8)) + "px";
       }
 
       function openProvince(layer, feature) {
         const guides = guidesFor(feature.properties.adcode);
-        if (selected && selected !== layer) selected.setStyle(baseStyle());
+        if (selected && selected !== layer) selected.setStyle(baseStyle(selected.feature));
         selected = layer;
         layer.setStyle(activeStyle(guides.length > 0));
         layer.bringToFront();
-
         const name = feature.properties.name || "";
-        if (guides.length) {
-          fly.innerHTML = `<p class="prov">${escapeHtml(name)}</p>` + guides.map((g) =>
-            `<a href="${escapeHtml(g.href)}">${escapeHtml(g.city)}｜${escapeHtml(g.dates)}</a>`
-          ).join("");
-        } else {
-          fly.innerHTML = `<p class="prov">${escapeHtml(name)}</p><p class="wait">期待解锁</p>`;
-        }
+        fly.innerHTML = guides.length
+          ? `<p class="prov">${escapeHtml(name)}</p>` + guides.map((g) =>
+              `<a href="${escapeHtml(g.href)}">${escapeHtml(g.city)}｜${escapeHtml(g.dates)}</a>`
+            ).join("")
+          : `<p class="prov">${escapeHtml(name)}</p><p class="wait">期待解锁</p>`;
         fly.hidden = false;
         fly.style.display = "block";
         placeFly(layer);
@@ -355,13 +315,14 @@
         const layer = L.geoJSON(geo, {
           style: baseStyle,
           onEachFeature: (feature, province) => {
+            province.feature = feature;
             province.on("mouseover", () => {
               if (selected === province) return;
-              province.setStyle({ fillOpacity: 0.26, weight: 1.25 });
+              province.setStyle({ fillOpacity: 1 });
             });
             province.on("mouseout", () => {
               if (selected === province) return;
-              province.setStyle(baseStyle());
+              province.setStyle(baseStyle(feature));
             });
             province.on("click", (e) => {
               L.DomEvent.stopPropagation(e);
@@ -369,12 +330,11 @@
             });
           }
         }).addTo(map);
-
-        map.fitBounds(layer.getBounds(), { padding: [16, 16] });
+        map.fitBounds(layer.getBounds(), { padding: [12, 12] });
         map.on("click", hideFly);
         requestAnimationFrame(() => map.invalidateSize());
       } catch (err) {
-        document.getElementById("fail").style.display = "grid";
+        document.getElementById("fail").style.display = "block";
       }
     }
 
