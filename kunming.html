@@ -92,7 +92,41 @@
     }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
-      #map { min-height: 360px !important; }
+    }
+    @media (max-width: 720px) {
+      .wrap { padding: 10px 10px 28px; }
+      header { gap: 4px; margin-bottom: 8px; }
+      .eyebrow { display: none; }
+      h1 { font-size: 22px; }
+      .wx-board { margin: 8px 0 10px; gap: 6px; }
+      .wx-day { padding: 8px 10px; }
+      .wx-day .t { font-size: 16px; }
+      .wx-day .rain { display: none; }
+      .map-card {
+        position: sticky;
+        top: 8px;
+        z-index: 40;
+      }
+      .map-card .legend,
+      .map-card .card-head .meta { display: none; }
+      .map-card .card-head { padding: 8px 12px; }
+      .map-card .card-head h2 { font-size: 14px; }
+      #map {
+        height: 34vh !important;
+        min-height: 210px !important;
+      }
+      .leaflet-tile-pane { opacity: 0.72; }
+      .leaflet-popup-content {
+        margin: 8px 10px;
+        min-width: 110px;
+        font-size: 12px;
+      }
+      .popup-title { font-size: 13px; }
+      .timeline {
+        max-height: none;
+        min-height: 0;
+      }
+      .layout { gap: 10px; margin-top: 8px; }
     }
     .card {
       background: var(--card);
@@ -336,7 +370,7 @@
     <div class="wx-board" id="wxBoard"></div>
 
     <div class="layout">
-      <section class="card">
+      <section class="card map-card">
         <div class="card-head">
           <h2 id="mapTitle">路线地图</h2>
           <div class="meta">站名旁数字为顺序</div>
@@ -463,7 +497,7 @@
       95: "雷阵雨", 96: "雷阵雨伴冰雹", 99: "强雷暴冰雹"
     };
 
-    let map, layerGroup, activeDay = 0;
+    let map, layerGroup, activeDay = 0, stopMarkers = [];
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -474,10 +508,23 @@
         .replace(/"/g, "&quot;");
     }
 
+    function isMobile() {
+      return window.matchMedia("(max-width: 720px)").matches;
+    }
+
     function makeIcon(n, kind, name) {
       const cls = ["spot", "hotel", "transit", "food"].includes(kind) ? kind : "spot";
-      const label = kind === "hotel" ? "酒店" : String(name);
       const num = kind === "hotel" ? 1 : n;
+      if (isMobile()) {
+        return L.divIcon({
+          className: "",
+          html: `<div class="mk-wrap"><div class="mk ${cls}">${num}</div></div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          popupAnchor: [0, -15]
+        });
+      }
+      const label = kind === "hotel" ? "酒店" : String(name);
       const width = 40 + Math.min(label.length * 13, 280);
       return L.divIcon({
         className: "",
@@ -585,9 +632,13 @@
           </div>
         `;
         stop.onclick = () => {
-          map.flyTo(toMapLatLng(s), 15, { duration: 0.6 });
           document.querySelectorAll(".stop").forEach(x => x.classList.remove("active"));
           stop.classList.add("active");
+          map.invalidateSize();
+          const ll = toMapLatLng(s);
+          map.flyTo(ll, isMobile() ? 13 : 15, { duration: 0.45 });
+          const marker = stopMarkers[idx];
+          if (marker) marker.openPopup();
         };
         box.appendChild(stop);
 
@@ -618,6 +669,7 @@
       }));
 
       d.legs.forEach((leg) => {
+        if (isMobile()) return;
         const a = latlngs[leg.from];
         const b = latlngs[leg.to];
         if (!a || !b) return;
@@ -629,6 +681,7 @@
         }));
       });
 
+      stopMarkers = [];
       d.stops.forEach((s, i) => {
         const m = L.marker(toMapLatLng(s), {
           icon: makeIcon(i + 1, s.kind, s.name),
@@ -639,9 +692,10 @@
           ${s.desc ? `<div class="popup-desc">${escapeHtml(s.desc)}</div>` : ""}
         `);
         layerGroup.addLayer(m);
+        stopMarkers.push(m);
       });
 
-      map.fitBounds(latlngs, { padding: [56, 56], maxZoom: 14 });
+      map.fitBounds(latlngs, { padding: isMobile() ? [24, 24] : [56, 56], maxZoom: isMobile() ? 13 : 14 });
     }
 
     function selectDay(i) {
@@ -649,6 +703,7 @@
       renderWeatherBoard();
       renderTimeline();
       drawDayOnMap();
+      requestAnimationFrame(() => map.invalidateSize());
     }
 
     async function loadWeather() {
