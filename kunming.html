@@ -282,6 +282,20 @@
       color: var(--rain);
       border-left: 2px dashed #b7c9c2;
       position: relative;
+      line-height: 1.45;
+    }
+    .transit .via {
+      color: var(--muted);
+      margin-left: 6px;
+    }
+    .mk.via-pt {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 14px;
+      font-size: 0;
+      background: #7a8f87;
+      border-width: 2px;
+      box-shadow: 0 0 0 1.5px rgba(122, 143, 135, 0.25);
     }
     .wx-board {
       display: grid;
@@ -554,7 +568,33 @@
       return window.matchMedia("(max-width: 720px)").matches;
     }
 
-    function makeIcon(n, kind, name) {
+    function isViaStop(s) {
+      return s && s.time === "途经";
+    }
+
+    function displayNumsFor(stops) {
+      const nums = [];
+      let n = 0;
+      stops.forEach((s) => {
+        if (isViaStop(s)) nums.push(null);
+        else {
+          n += 1;
+          nums.push(n);
+        }
+      });
+      return nums;
+    }
+
+    function makeIcon(n, kind, name, via) {
+      if (via) {
+        return L.divIcon({
+          className: "",
+          html: `<div class="mk-wrap"><div class="mk via-pt" title="${escapeHtml(name)}"></div></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+          popupAnchor: [0, -8]
+        });
+      }
       const cls = ["spot", "hotel", "transit", "food"].includes(kind) ? kind : "spot";
       const num = kind === "hotel" ? 1 : n;
       if (isMobile()) {
@@ -662,15 +702,20 @@
       document.getElementById("mapTitle").textContent = d.label + " · 路线地图";
       const box = document.getElementById("timeline");
       box.innerHTML = "";
+      const nums = displayNumsFor(d.stops);
 
       d.stops.forEach((s, idx) => {
+        // 途经点不单独占一行，挂到上一段「步行」后面
+        if (isViaStop(s)) return;
+
         const stop = document.createElement("div");
         stop.className = "stop";
+        const num = nums[idx];
         stop.innerHTML = `
-          <div class="time">${s.time}</div>
+          <div class="time">${escapeHtml(s.time)}</div>
           <div>
-            <h3>${idx + 1}. ${s.name}</h3>
-            ${s.desc ? `<p>${s.desc}</p>` : ""}
+            <h3>${num}. ${escapeHtml(s.name)}</h3>
+            ${s.desc ? `<p>${escapeHtml(s.desc)}</p>` : ""}
           </div>
         `;
         stop.onclick = () => {
@@ -685,12 +730,26 @@
         box.appendChild(stop);
 
         const leg = d.legs.find(l => l.from === idx);
-        if (leg) {
-          const t = document.createElement("div");
-          t.className = "transit";
-          t.textContent = "↓ " + leg.label;
-          box.appendChild(t);
+        if (!leg) return;
+
+        // 收集这段路程上连续的途经点，写到步行文案后面
+        const viaNames = [];
+        let cursor = leg.to;
+        while (isViaStop(d.stops[cursor])) {
+          viaNames.push(d.stops[cursor].name);
+          const nextLeg = d.legs.find(l => l.from === cursor);
+          if (!nextLeg) break;
+          cursor = nextLeg.to;
         }
+
+        const t = document.createElement("div");
+        t.className = "transit";
+        if (viaNames.length) {
+          t.innerHTML = `↓ ${escapeHtml(leg.label)}<span class="via">途经 ${escapeHtml(viaNames.join("、"))}</span>`;
+        } else {
+          t.textContent = "↓ " + leg.label;
+        }
+        box.appendChild(t);
       });
     }
 
@@ -724,12 +783,14 @@
       });
 
       stopMarkers = [];
+      const nums = displayNumsFor(d.stops);
       d.stops.forEach((s, i) => {
+        const via = isViaStop(s);
         const m = L.marker(toMapLatLng(s), {
-          icon: makeIcon(i + 1, s.kind, s.name),
-          zIndexOffset: 400
+          icon: makeIcon(nums[i] || 0, s.kind, s.name, via),
+          zIndexOffset: via ? 300 : 400
         }).bindPopup(`
-          <div class="popup-time">${s.time}</div>
+          <div class="popup-time">${escapeHtml(s.time)}</div>
           <div class="popup-title">${escapeHtml(s.name)}</div>
           ${s.desc ? `<div class="popup-desc">${escapeHtml(s.desc)}</div>` : ""}
         `);
