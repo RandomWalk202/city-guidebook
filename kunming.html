@@ -297,6 +297,126 @@
       border-width: 2px;
       box-shadow: 0 0 0 1.5px rgba(122, 143, 135, 0.25);
     }
+    .card-head .head-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fffcf6;
+      color: var(--ink);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 650;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn.danger {
+      color: #9a3b2f;
+      border-color: #e2c4be;
+    }
+    .btn.tiny {
+      padding: 4px 7px;
+      font-size: 11px;
+    }
+    .edit-banner {
+      display: none;
+      margin: 0;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-bottom: 1px solid #cfe4dc;
+    }
+    body.editing .edit-banner { display: block; }
+    body.editing .map-card .legend {
+      display: block;
+      color: var(--accent);
+    }
+    .stop-edit {
+      display: grid;
+      gap: 6px;
+    }
+    .stop-edit .row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+    .field {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 7px 9px;
+      font: inherit;
+      font-size: 13px;
+      color: var(--ink);
+    }
+    .field:focus {
+      outline: 2px solid rgba(15, 107, 92, 0.22);
+      border-color: var(--accent);
+    }
+    .field.time { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--warm); }
+    .field.name { font-weight: 700; font-size: 14px; }
+    .field.desc { color: var(--muted); }
+    .field.leg {
+      border: none;
+      background: transparent;
+      color: var(--rain);
+      font-size: 12px;
+      font-weight: 650;
+      padding: 0;
+      width: auto;
+      min-width: 8em;
+    }
+    .stop-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .stop.active {
+      outline: 2px solid rgba(15, 107, 92, 0.35);
+    }
+    .title-edit {
+      width: min(100%, 280px);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .add-stop {
+      margin: 10px 16px 6px;
+    }
+    .edit-footer {
+      display: none;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 16px 14px;
+      border-top: 1px solid var(--line);
+      background: #fffcf6;
+    }
+    body.editing .edit-footer { display: flex; }
+    .transit-edit {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .transit-edit::before {
+      content: "↓";
+      color: var(--rain);
+    }
     .wx-board {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -402,6 +522,18 @@
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
       }
+      .card-head .head-actions {
+        gap: 6px;
+      }
+      .btn { padding: 5px 8px; }
+      body.editing .map-card .legend {
+        display: block;
+        font-size: 11px;
+        padding: 6px 12px 8px;
+      }
+      body.editing .edit-footer {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      }
     }
   </style>
 </head>
@@ -421,20 +553,30 @@
       <section class="card map-card">
         <div class="card-head">
           <h2 id="mapTitle">路线地图</h2>
-          <div class="meta">站名旁数字为顺序</div>
+          <div class="meta" id="mapMeta">站名旁数字为顺序</div>
         </div>
+        <p class="edit-banner" id="mapEditHint">编辑中：先点选右侧地点，再点地图或拖动标记改位置</p>
         <div class="map-shell">
           <div id="map"></div>
         </div>
-        <div class="legend">圆点旁为站名 · 连线上为交通耗时</div>
+        <div class="legend" id="mapLegend">圆点旁为站名 · 连线上为交通耗时</div>
       </section>
 
       <section class="card list-card">
         <div class="card-head">
           <h2 id="listTitle">当日行程</h2>
-          <div class="meta" id="listMeta"></div>
+          <div class="head-actions">
+            <div class="meta" id="listMeta"></div>
+            <button type="button" class="btn" id="editToggle">编辑行程</button>
+          </div>
         </div>
+        <p class="edit-banner">可改时间、站名、备注、交通；增删排序后地图会立刻更新。改动保存在本机，可用导出备份。</p>
         <div class="timeline" id="timeline"></div>
+        <div class="edit-footer">
+          <button type="button" class="btn" id="btnExport">导出 JSON</button>
+          <button type="button" class="btn" id="btnCopy">复制 JSON</button>
+          <button type="button" class="btn danger" id="btnReset">恢复默认</button>
+        </div>
       </section>
     </div>
   </div>
@@ -542,6 +684,9 @@
       }
     ];
 
+    const STORAGE_KEY = "city-guidebook:kunming:days:v1";
+    const DEFAULT_DAYS = JSON.parse(JSON.stringify(DAYS));
+
     const WMO = {
       0: "晴", 1: "大部晴朗", 2: "局部多云", 3: "阴天",
       45: "雾", 48: "雾凇",
@@ -552,6 +697,9 @@
     };
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
+    let editMode = false;
+    let selectedStopIdx = null;
+    let skipFitBounds = false;
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -581,6 +729,58 @@
         }
       });
       return nums;
+    }
+
+    function rebuildLegs(day) {
+      const prev = new Map((day.legs || []).map((l) => [l.from + ">" + l.to, l.label]));
+      const sequential = new Map((day.legs || []).map((l) => [l.from, l.label]));
+      day.legs = [];
+      for (let i = 0; i < day.stops.length - 1; i++) {
+        const key = i + ">" + (i + 1);
+        day.legs.push({
+          from: i,
+          to: i + 1,
+          label: prev.get(key) || sequential.get(i) || "步行"
+        });
+      }
+    }
+
+    function saveDays() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DAYS));
+      } catch (e) { /* ignore quota */ }
+    }
+
+    function loadSavedDays() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length !== DEFAULT_DAYS.length) return;
+        parsed.forEach((d, i) => {
+          if (!d || !Array.isArray(d.stops)) return;
+          DAYS[i].title = d.title || DAYS[i].title;
+          DAYS[i].summary = d.summary || DAYS[i].summary;
+          DAYS[i].stops = d.stops;
+          DAYS[i].legs = Array.isArray(d.legs) ? d.legs : [];
+          rebuildLegs(DAYS[i]);
+        });
+      } catch (e) { /* ignore bad cache */ }
+    }
+
+    function refreshView(opts = {}) {
+      skipFitBounds = !!opts.keepView;
+      renderWeatherBoard();
+      renderTimeline();
+      drawDayOnMap();
+      requestAnimationFrame(() => map && map.invalidateSize());
+      skipFitBounds = false;
+    }
+
+    function commitChange(opts = {}) {
+      rebuildLegs(DAYS[activeDay]);
+      saveDays();
+      refreshView(opts);
     }
 
     function makeIcon(n, kind, name, via) {
@@ -662,6 +862,15 @@
       return [lat + dLat, lng + dLng];
     }
 
+    // 地图点击得到 GCJ-02，存回 WGS-84
+    function gcj02ToWgs84(lng, lat) {
+      const [glat, glng] = wgs84ToGcj02(lng, lat);
+      return {
+        lat: +(lat * 2 - glat).toFixed(6),
+        lng: +(lng * 2 - glng).toFixed(6)
+      };
+    }
+
     function toMapLatLng(s) {
       return wgs84ToGcj02(s.lng, s.lat);
     }
@@ -669,6 +878,109 @@
     function formatCnDate(iso) {
       const [y, m, d] = iso.split("-").map(Number);
       return `${y}年${m}月${d}日`;
+    }
+
+    function setEditMode(on) {
+      editMode = on;
+      document.body.classList.toggle("editing", on);
+      const btn = document.getElementById("editToggle");
+      btn.textContent = on ? "完成" : "编辑行程";
+      btn.classList.toggle("primary", on);
+      document.getElementById("mapMeta").textContent = on ? "点选地点后点地图改位置" : "站名旁数字为顺序";
+      document.getElementById("mapLegend").textContent = on
+        ? "编辑中：拖动标记也可改位置 · 改动已自动保存到本机"
+        : "圆点旁为站名 · 连线上为交通耗时";
+      if (!on) selectedStopIdx = null;
+      refreshView({ keepView: true });
+    }
+
+    function selectStop(idx, fly = true) {
+      selectedStopIdx = idx;
+      document.querySelectorAll(".stop").forEach((el) => {
+        el.classList.toggle("active", Number(el.dataset.idx) === idx);
+      });
+      const s = DAYS[activeDay].stops[idx];
+      if (!s || !fly) return;
+      map.invalidateSize();
+      map.flyTo(toMapLatLng(s), isMobile() ? 14 : 15, { duration: 0.35 });
+      const marker = stopMarkers[idx];
+      if (marker && !editMode) marker.openPopup();
+    }
+
+    function moveStopToMapLatLng(idx, mapLat, mapLng) {
+      const wgs = gcj02ToWgs84(mapLng, mapLat);
+      const s = DAYS[activeDay].stops[idx];
+      s.lat = wgs.lat;
+      s.lng = wgs.lng;
+      saveDays();
+      refreshView({ keepView: true });
+      selectStop(idx, false);
+    }
+
+    function addStopAfter(idx) {
+      const day = DAYS[activeDay];
+      const base = day.stops[idx] || day.stops[day.stops.length - 1] || {
+        lat: 25.04, lng: 102.71
+      };
+      const insertAt = idx == null ? day.stops.length : idx + 1;
+      day.stops.splice(insertAt, 0, {
+        time: "",
+        name: "新地点",
+        lat: base.lat,
+        lng: base.lng,
+        kind: "spot",
+        desc: ""
+      });
+      selectedStopIdx = insertAt;
+      commitChange({ keepView: true });
+    }
+
+    function deleteStop(idx) {
+      const day = DAYS[activeDay];
+      if (day.stops.length <= 1) return;
+      day.stops.splice(idx, 1);
+      if (selectedStopIdx === idx) selectedStopIdx = null;
+      else if (selectedStopIdx != null && selectedStopIdx > idx) selectedStopIdx -= 1;
+      commitChange({ keepView: true });
+    }
+
+    function moveStop(idx, dir) {
+      const day = DAYS[activeDay];
+      const j = idx + dir;
+      if (j < 0 || j >= day.stops.length) return;
+      const tmp = day.stops[idx];
+      day.stops[idx] = day.stops[j];
+      day.stops[j] = tmp;
+      selectedStopIdx = j;
+      commitChange({ keepView: true });
+    }
+
+    function exportDays() {
+      const blob = new Blob([JSON.stringify(DAYS, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "kunming-days.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function copyDays() {
+      const text = JSON.stringify(DAYS, null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("已复制到剪贴板");
+      } catch (e) {
+        prompt("复制下面的 JSON：", text);
+      }
+    }
+
+    function resetDays() {
+      if (!confirm("恢复为页面默认行程？本机改动会清除。")) return;
+      const fresh = JSON.parse(JSON.stringify(DEFAULT_DAYS));
+      fresh.forEach((d, i) => { DAYS[i] = d; });
+      localStorage.removeItem(STORAGE_KEY);
+      selectedStopIdx = null;
+      refreshView();
     }
 
     function renderWeatherBoard() {
@@ -695,42 +1007,126 @@
 
     function renderTimeline() {
       const d = DAYS[activeDay];
-      document.getElementById("listTitle").textContent = d.title;
-      document.getElementById("listMeta").textContent = formatCnDate(d.date);
+      const titleEl = document.getElementById("listTitle");
+      const metaEl = document.getElementById("listMeta");
       document.getElementById("mapTitle").textContent = d.label + " · 路线地图";
+      metaEl.textContent = formatCnDate(d.date);
+
+      if (editMode) {
+        titleEl.innerHTML = "";
+        const input = document.createElement("input");
+        input.className = "field title-edit";
+        input.value = d.title;
+        input.placeholder = "当日标题";
+        input.oninput = () => { d.title = input.value; saveDays(); };
+        titleEl.appendChild(input);
+      } else {
+        titleEl.textContent = d.title;
+      }
+
       const box = document.getElementById("timeline");
       box.innerHTML = "";
       const nums = displayNumsFor(d.stops);
 
       d.stops.forEach((s, idx) => {
-        // 途经点不单独占一行，挂到上一段「步行」后面
-        if (isViaStop(s)) return;
+        if (!editMode && isViaStop(s)) return;
 
         const stop = document.createElement("div");
-        stop.className = "stop";
-        const num = nums[idx];
-        stop.innerHTML = `
-          <div class="time">${escapeHtml(s.time)}</div>
-          <div>
-            <h3>${num}. ${escapeHtml(s.name)}</h3>
-            ${s.desc ? `<p>${escapeHtml(s.desc)}</p>` : ""}
-          </div>
-        `;
-        stop.onclick = () => {
-          document.querySelectorAll(".stop").forEach(x => x.classList.remove("active"));
-          stop.classList.add("active");
-          map.invalidateSize();
-          const ll = toMapLatLng(s);
-          map.flyTo(ll, isMobile() ? 13 : 15, { duration: 0.45 });
-          const marker = stopMarkers[idx];
-          if (marker) marker.openPopup();
-        };
+        stop.className = "stop" + (selectedStopIdx === idx ? " active" : "");
+        stop.dataset.idx = String(idx);
+
+        if (editMode) {
+          const num = isViaStop(s) ? "途" : (nums[idx] || "");
+          stop.innerHTML = `
+            <div class="stop-edit" style="grid-column: 1 / -1">
+              <div class="row">
+                <input class="field time" data-k="time" value="${escapeHtml(s.time)}" placeholder="时间" />
+                <input class="field name" data-k="name" value="${escapeHtml(s.name)}" placeholder="地点名称" />
+              </div>
+              <input class="field desc" data-k="desc" value="${escapeHtml(s.desc || "")}" placeholder="备注（可空）" />
+              <div class="stop-tools">
+                <span class="meta">#${num}</span>
+                <select class="field" data-k="kind" style="width:auto;padding:4px 8px">
+                  <option value="spot">地点</option>
+                  <option value="food">吃饭</option>
+                  <option value="hotel">酒店</option>
+                  <option value="transit">交通</option>
+                </select>
+                <button type="button" class="btn tiny" data-act="pin">选中定位</button>
+                <button type="button" class="btn tiny" data-act="up">上移</button>
+                <button type="button" class="btn tiny" data-act="down">下移</button>
+                <button type="button" class="btn tiny" data-act="add">下方加站</button>
+                <button type="button" class="btn tiny danger" data-act="del">删除</button>
+              </div>
+            </div>
+          `;
+          stop.querySelector('[data-k="kind"]').value = s.kind || "spot";
+          stop.querySelectorAll("[data-k]").forEach((el) => {
+            const key = el.dataset.k;
+            const syncValue = () => { s[key] = el.value; };
+            el.addEventListener("input", () => {
+              syncValue();
+              saveDays();
+            });
+            el.addEventListener("change", () => {
+              syncValue();
+              // 名称/类型/时间影响地图标记，改完再重绘
+              if (key === "time" || key === "kind" || key === "name") {
+                commitChange({ keepView: true });
+              } else {
+                saveDays();
+              }
+            });
+            el.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") { e.preventDefault(); el.blur(); }
+            });
+          });
+          stop.querySelectorAll("[data-act]").forEach((btn) => {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              const act = btn.dataset.act;
+              if (act === "pin") selectStop(idx, true);
+              if (act === "up") moveStop(idx, -1);
+              if (act === "down") moveStop(idx, 1);
+              if (act === "add") addStopAfter(idx);
+              if (act === "del") deleteStop(idx);
+            };
+          });
+          stop.onclick = () => selectStop(idx, true);
+        } else {
+          const num = nums[idx];
+          stop.innerHTML = `
+            <div class="time">${escapeHtml(s.time)}</div>
+            <div>
+              <h3>${num}. ${escapeHtml(s.name)}</h3>
+              ${s.desc ? `<p>${escapeHtml(s.desc)}</p>` : ""}
+            </div>
+          `;
+          stop.onclick = () => {
+            selectStop(idx, true);
+          };
+        }
         box.appendChild(stop);
 
         const leg = d.legs.find(l => l.from === idx);
         if (!leg) return;
 
-        // 收集这段路程上连续的途经点，写到步行文案后面
+        if (editMode) {
+          const t = document.createElement("div");
+          t.className = "transit transit-edit";
+          const input = document.createElement("input");
+          input.className = "field leg";
+          input.value = leg.label;
+          input.placeholder = "交通方式，如 步行 / 打车 ≈20min";
+          input.oninput = () => { leg.label = input.value; saveDays(); };
+          input.onchange = () => commitChange({ keepView: true });
+          t.appendChild(input);
+          box.appendChild(t);
+          return;
+        }
+
+        if (isViaStop(s)) return;
+
         const viaNames = [];
         let cursor = leg.to;
         while (isViaStop(d.stops[cursor])) {
@@ -749,6 +1145,15 @@
         }
         box.appendChild(t);
       });
+
+      if (editMode) {
+        const add = document.createElement("button");
+        add.type = "button";
+        add.className = "btn add-stop";
+        add.textContent = "+ 添加地点";
+        add.onclick = () => addStopAfter(d.stops.length - 1);
+        box.appendChild(add);
+      }
     }
 
     function drawDayOnMap() {
@@ -756,6 +1161,7 @@
       else layerGroup = L.layerGroup().addTo(map);
 
       const d = DAYS[activeDay];
+      if (!d.stops.length) return;
       const latlngs = d.stops.map(toMapLatLng);
 
       layerGroup.addLayer(L.polyline(latlngs, {
@@ -786,25 +1192,33 @@
         const via = isViaStop(s);
         const m = L.marker(toMapLatLng(s), {
           icon: makeIcon(nums[i] || 0, s.kind, s.name, via),
-          zIndexOffset: via ? 300 : 400
+          zIndexOffset: via ? 300 : 400,
+          draggable: editMode
         }).bindPopup(`
           <div class="popup-time">${escapeHtml(s.time)}</div>
           <div class="popup-title">${escapeHtml(s.name)}</div>
           ${s.desc ? `<div class="popup-desc">${escapeHtml(s.desc)}</div>` : ""}
         `);
+        m.on("click", () => selectStop(i, false));
+        if (editMode) {
+          m.on("dragend", () => {
+            const ll = m.getLatLng();
+            moveStopToMapLatLng(i, ll.lat, ll.lng);
+          });
+        }
         layerGroup.addLayer(m);
         stopMarkers.push(m);
       });
 
-      map.fitBounds(latlngs, { padding: isMobile() ? [24, 24] : [56, 56], maxZoom: isMobile() ? 13 : 14 });
+      if (!skipFitBounds) {
+        map.fitBounds(latlngs, { padding: isMobile() ? [24, 24] : [56, 56], maxZoom: isMobile() ? 13 : 14 });
+      }
     }
 
     function selectDay(i) {
       activeDay = i;
-      renderWeatherBoard();
-      renderTimeline();
-      drawDayOnMap();
-      requestAnimationFrame(() => map.invalidateSize());
+      selectedStopIdx = null;
+      refreshView();
     }
 
     async function loadWeather() {
@@ -835,15 +1249,27 @@
 
     function initMap() {
       map = L.map("map", { scrollWheelZoom: true });
-      // 中文路网底图（高德）；标注统一为中文，避免 OSM 中英混杂
       L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}", {
         maxZoom: 18,
         subdomains: "1234",
         attribution: "&copy; 高德地图"
       }).addTo(map);
+      map.on("click", (e) => {
+        if (!editMode || selectedStopIdx == null) return;
+        moveStopToMapLatLng(selectedStopIdx, e.latlng.lat, e.latlng.lng);
+      });
       selectDay(0);
     }
 
+    function bindEditChrome() {
+      document.getElementById("editToggle").onclick = () => setEditMode(!editMode);
+      document.getElementById("btnExport").onclick = exportDays;
+      document.getElementById("btnCopy").onclick = copyDays;
+      document.getElementById("btnReset").onclick = resetDays;
+    }
+
+    loadSavedDays();
+    bindEditChrome();
     initMap();
     loadWeather();
   </script>
