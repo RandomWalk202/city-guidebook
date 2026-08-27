@@ -452,18 +452,20 @@
         id: "d27",
         date: "2026-08-27",
         label: "周四 8/27",
-        title: "落地 · 翠湖 · 酒杯楼",
-        summary: "晚饭后经人民中路、云瑞西路至酒杯楼",
+        title: "落地 · 翠湖 · 东方书店",
+        summary: "主线：云南美术馆 → 黄公东街 → 翠湖公园 → 酒杯楼 → 东方书店",
         stops: [
           { time: "13:00", name: "昆明长水国际机场", lat: 25.1019, lng: 102.9292, kind: "transit", desc: "抵达" },
           { time: "14:30", name: HOTEL.name, lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "入住，15:20 出门" },
           { time: "15:40–16:20", name: "云南美术馆", lat: 25.0401, lng: 102.7027, kind: "spot", desc: "五一路118号" },
           { time: "途经", name: "五一路", lat: 25.0443, lng: 102.7040, kind: "spot", desc: "北行" },
-          { time: "17:00", name: "翠湖公园南门", lat: 25.0490, lng: 102.7019, kind: "spot", desc: "入园转了一圈" },
+          { time: "16:40", name: "黄公东街", lat: 25.0493, lng: 102.7039, kind: "spot", desc: "" },
+          { time: "17:00", name: "翠湖公园", lat: 25.0490, lng: 102.7019, kind: "spot", desc: "南门入园转了一圈" },
           { time: "17:45", name: "南湖春（翠湖店）", lat: 25.0487, lng: 102.7023, kind: "food", desc: "过桥米线，南门外左手边" },
           { time: "途经", name: "人民中路", lat: 25.0460, lng: 102.7051, kind: "spot", desc: "" },
           { time: "途经", name: "云瑞西路", lat: 25.0446, lng: 102.7054, kind: "spot", desc: "" },
-          { time: "18:50", name: "酒杯楼", lat: 25.0426, lng: 102.7055, kind: "spot", desc: "光华街，对月楼" }
+          { time: "18:50", name: "酒杯楼", lat: 25.0426, lng: 102.7055, kind: "spot", desc: "光华街，对月楼" },
+          { time: "19:30", name: "东方书店", lat: 25.0419, lng: 102.7073, kind: "spot", desc: "文明街52号" }
         ],
         legs: [
           { from: 0, to: 1, label: "打车 ≈90min" },
@@ -473,7 +475,9 @@
           { from: 4, to: 5, label: "步行" },
           { from: 5, to: 6, label: "步行" },
           { from: 6, to: 7, label: "步行" },
-          { from: 7, to: 8, label: "步行" }
+          { from: 7, to: 8, label: "步行" },
+          { from: 8, to: 9, label: "步行" },
+          { from: 9, to: 10, label: "步行" }
         ]
       },
       {
