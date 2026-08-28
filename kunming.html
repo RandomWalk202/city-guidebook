@@ -417,6 +417,41 @@
       content: "↓";
       color: var(--rain);
     }
+    .coord-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 6px;
+      align-items: center;
+    }
+    .coord-row .field {
+      font-size: 12px;
+      padding: 6px 8px;
+      font-variant-numeric: tabular-nums;
+    }
+    .edit-toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(12px);
+      background: rgba(28, 36, 33, 0.92);
+      color: #fff;
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 5000;
+      max-width: min(92vw, 420px);
+      text-align: center;
+    }
+    .edit-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    body.editing .stop.active {
+      box-shadow: inset 0 0 0 2px rgba(15, 107, 92, 0.35);
+    }
     .wx-board {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -570,7 +605,7 @@
             <button type="button" class="btn" id="editToggle">编辑行程</button>
           </div>
         </div>
-        <p class="edit-banner">可改时间、站名、备注、交通；增删排序后地图会立刻更新。改动保存在本机，可用导出备份。</p>
+        <p class="edit-banner">改站名后点「搜索定位」，或选中地点后点地图 / 拖标记；改经纬度后地图会立刻更新。</p>
         <div class="timeline" id="timeline"></div>
         <div class="edit-footer">
           <button type="button" class="btn" id="btnExport">导出 JSON</button>
@@ -580,6 +615,7 @@
       </section>
     </div>
   </div>
+  <div class="edit-toast" id="editToast" aria-live="polite"></div>
 
   <script>
     const HOTEL = {
@@ -700,6 +736,7 @@
     let editMode = false;
     let selectedStopIdx = null;
     let skipFitBounds = false;
+    let toastTimer = null;
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -777,10 +814,91 @@
       skipFitBounds = false;
     }
 
+    function refreshMapOnly(opts = {}) {
+      skipFitBounds = !!opts.keepView;
+      drawDayOnMap();
+      syncCoordInputs();
+      requestAnimationFrame(() => map && map.invalidateSize());
+      skipFitBounds = false;
+    }
+
     function commitChange(opts = {}) {
       rebuildLegs(DAYS[activeDay]);
       saveDays();
-      refreshView(opts);
+      if (opts.mapOnly) refreshMapOnly(opts);
+      else refreshView(opts);
+    }
+
+    function showToast(msg, ms = 2200) {
+      const el = document.getElementById("editToast");
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("show"), ms);
+    }
+
+    function syncCoordInputs() {
+      if (!editMode) return;
+      document.querySelectorAll(".stop[data-idx]").forEach((el) => {
+        const idx = Number(el.dataset.idx);
+        const s = DAYS[activeDay].stops[idx];
+        if (!s) return;
+        const lat = el.querySelector('[data-k="lat"]');
+        const lng = el.querySelector('[data-k="lng"]');
+        if (lat && document.activeElement !== lat) lat.value = s.lat;
+        if (lng && document.activeElement !== lng) lng.value = s.lng;
+      });
+    }
+
+    async function geocodeStop(idx) {
+      const s = DAYS[activeDay].stops[idx];
+      if (!s.name.trim()) {
+        showToast("请先填写地点名称");
+        return false;
+      }
+      const q = /昆明/.test(s.name) ? s.name.trim() : `昆明 ${s.name.trim()}`;
+      showToast("正在搜索位置…");
+      try {
+        const url = "https://nominatim.openstreetmap.org/search?q="
+          + encodeURIComponent(q) + "&format=json&limit=1";
+        const res = await fetch(url, { headers: { "User-Agent": "city-guidebook/1.0" } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!data.length) {
+          showToast("未找到该地点，请点地图手动定位");
+          return false;
+        }
+        s.lat = +(+data[0].lat).toFixed(6);
+        s.lng = +(+data[0].lon).toFixed(6);
+        saveDays();
+        selectedStopIdx = idx;
+        refreshMapOnly({ keepView: true });
+        map.panTo(toMapLatLng(s));
+        showToast("地图已更新：" + s.name);
+        return true;
+      } catch (e) {
+        showToast("搜索失败，请点地图或填坐标");
+        return false;
+      }
+    }
+
+    function applyCoords(idx, latVal, lngVal) {
+      const lat = parseFloat(latVal);
+      const lng = parseFloat(lngVal);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+      const s = DAYS[activeDay].stops[idx];
+      const nlat = +lat.toFixed(6);
+      const nlng = +lng.toFixed(6);
+      if (s.lat === nlat && s.lng === nlng) return false;
+      s.lat = nlat;
+      s.lng = nlng;
+      saveDays();
+      selectedStopIdx = idx;
+      refreshMapOnly({ keepView: true });
+      map.panTo(toMapLatLng(s));
+      showToast("地图已更新");
+      return true;
     }
 
     function makeIcon(n, kind, name, via) {
@@ -886,9 +1004,9 @@
       const btn = document.getElementById("editToggle");
       btn.textContent = on ? "完成" : "编辑行程";
       btn.classList.toggle("primary", on);
-      document.getElementById("mapMeta").textContent = on ? "点选地点后点地图改位置" : "站名旁数字为顺序";
+      document.getElementById("mapMeta").textContent = on ? "选中地点后点地图 / 拖标记 / 搜索定位" : "站名旁数字为顺序";
       document.getElementById("mapLegend").textContent = on
-        ? "编辑中：拖动标记也可改位置 · 改动已自动保存到本机"
+        ? "改站名后点「搜索定位」；或直接改经纬度 / 点地图设位置"
         : "圆点旁为站名 · 连线上为交通耗时";
       if (!on) selectedStopIdx = null;
       refreshView({ keepView: true });
@@ -913,8 +1031,10 @@
       s.lat = wgs.lat;
       s.lng = wgs.lng;
       saveDays();
-      refreshView({ keepView: true });
-      selectStop(idx, false);
+      selectedStopIdx = idx;
+      refreshMapOnly({ keepView: true });
+      syncCoordInputs();
+      showToast("地图已更新");
     }
 
     function addStopAfter(idx) {
@@ -1044,6 +1164,11 @@
                 <input class="field name" data-k="name" value="${escapeHtml(s.name)}" placeholder="地点名称" />
               </div>
               <input class="field desc" data-k="desc" value="${escapeHtml(s.desc || "")}" placeholder="备注（可空）" />
+              <div class="coord-row">
+                <input class="field" data-k="lat" inputmode="decimal" value="${s.lat}" placeholder="纬度 lat" />
+                <input class="field" data-k="lng" inputmode="decimal" value="${s.lng}" placeholder="经度 lng" />
+                <button type="button" class="btn tiny" data-act="geo">搜索定位</button>
+              </div>
               <div class="stop-tools">
                 <span class="meta">#${num}</span>
                 <select class="field" data-k="kind" style="width:auto;padding:4px 8px">
@@ -1064,17 +1189,20 @@
           stop.querySelectorAll("[data-k]").forEach((el) => {
             const key = el.dataset.k;
             const syncValue = () => { s[key] = el.value; };
+            el.addEventListener("focus", () => selectStop(idx, false));
             el.addEventListener("input", () => {
               syncValue();
               saveDays();
             });
-            el.addEventListener("change", () => {
+            el.addEventListener("blur", () => {
               syncValue();
-              // 名称/类型/时间影响地图标记，改完再重绘
-              if (key === "time" || key === "kind" || key === "name") {
-                commitChange({ keepView: true });
-              } else {
-                saveDays();
+              saveDays();
+              if (key === "lat" || key === "lng") {
+                const latEl = stop.querySelector('[data-k="lat"]');
+                const lngEl = stop.querySelector('[data-k="lng"]');
+                applyCoords(idx, latEl.value, lngEl.value);
+              } else if (key === "name" || key === "kind" || key === "time") {
+                refreshMapOnly({ keepView: true });
               }
             });
             el.addEventListener("keydown", (e) => {
@@ -1086,13 +1214,17 @@
               e.stopPropagation();
               const act = btn.dataset.act;
               if (act === "pin") selectStop(idx, true);
+              if (act === "geo") geocodeStop(idx);
               if (act === "up") moveStop(idx, -1);
               if (act === "down") moveStop(idx, 1);
               if (act === "add") addStopAfter(idx);
               if (act === "del") deleteStop(idx);
             };
           });
-          stop.onclick = () => selectStop(idx, true);
+          stop.onclick = (e) => {
+            if (e.target.closest("input, select, button")) return;
+            selectStop(idx, true);
+          };
         } else {
           const num = nums[idx];
           stop.innerHTML = `
@@ -1119,7 +1251,7 @@
           input.value = leg.label;
           input.placeholder = "交通方式，如 步行 / 打车 ≈20min";
           input.oninput = () => { leg.label = input.value; saveDays(); };
-          input.onchange = () => commitChange({ keepView: true });
+          input.onblur = () => refreshMapOnly({ keepView: true });
           t.appendChild(input);
           box.appendChild(t);
           return;
