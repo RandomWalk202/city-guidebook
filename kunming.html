@@ -8,8 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="dns-prefetch" href="https://jsbppxnrnzsxoqfworjj.supabase.co" />
-  <link rel="preconnect" href="https://jsbppxnrnzsxoqfworjj.supabase.co" crossorigin />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
@@ -585,22 +583,11 @@
 
     const NOTES_KEY = "city-guidebook:kunming:notes:v1";
     const NOTES_BACKUP_KEY = "city-guidebook:kunming:notes:v1:backup";
-    const NOTES_UPDATED_KEY = "city-guidebook:kunming:notes:v1:updated";
     const LEGACY_DAYS_KEY = "city-guidebook:kunming:days:v1";
-    const GUIDE_ID = "kunming";
-    const SUPABASE_URL = "https://jsbppxnrnzsxoqfworjj.supabase.co";
-    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_zLmaAY6WoAl8-fKy0WYMYw_RkvoueHC";
-    const CLOUD_ROW_ID = "city-guidebook-kunming-notes";
-    const REST_HEADERS = {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
-    };
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
     let notesByDay = loadNotes();
     const weatherByDate = {};
-    let cloudSyncTimer = null;
-    let cloudPullPromise = null;
 
     function escapeHtml(s) {
       return String(s)
@@ -770,143 +757,11 @@
       }
     }
 
-    function saveNotesLocal(payload) {
-      localStorage.setItem(NOTES_KEY, payload);
-      localStorage.setItem(NOTES_BACKUP_KEY, payload);
-      localStorage.setItem(NOTES_UPDATED_KEY, String(Date.now()));
-    }
-
-    function localNotesUpdatedAt() {
-      const raw = localStorage.getItem(NOTES_UPDATED_KEY);
-      const n = raw ? Number(raw) : 0;
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function mergeNotes(local, cloud) {
-      const out = JSON.parse(JSON.stringify(local || {}));
-      Object.entries(cloud || {}).forEach(([dayId, day]) => {
-        if (!day || !day.stops) return;
-        if (!out[dayId]) out[dayId] = { stops: {} };
-        if (!out[dayId].stops) out[dayId].stops = {};
-        Object.entries(day.stops).forEach(([idx, text]) => {
-          const localText = String(out[dayId].stops[idx] || "").trim();
-          const cloudText = String(text || "").trim();
-          if (!localText && cloudText) out[dayId].stops[idx] = cloudText;
-          else if (localText && !cloudText) out[dayId].stops[idx] = out[dayId].stops[idx];
-          else if (localText && cloudText) out[dayId].stops[idx] = localText.length >= cloudText.length ? out[dayId].stops[idx] : cloudText;
-        });
-      });
-      return out;
-    }
-
-    function isSupabaseConfigured() {
-      return !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
-    }
-
-    async function restSelect(table, { select, filter } = {}) {
-      const params = new URLSearchParams({ select });
-      if (filter) {
-        for (const [key, value] of Object.entries(filter)) {
-          params.set(key, value);
-        }
-      }
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-        headers: REST_HEADERS
-      });
-      if (!res.ok) return { data: null, error: { message: res.statusText } };
-      return { data: await res.json(), error: null };
-    }
-
-    async function restUpsert(table, row) {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-        method: "POST",
-        headers: {
-          ...REST_HEADERS,
-          "Content-Type": "application/json",
-          Prefer: "resolution=merge-duplicates,return=minimal"
-        },
-        body: JSON.stringify(row)
-      });
-      if (!res.ok) return { error: { message: res.statusText } };
-      return { error: null };
-    }
-
-    function scheduleCloudSync() {
-      if (!isSupabaseConfigured()) return;
-      clearTimeout(cloudSyncTimer);
-      cloudSyncTimer = setTimeout(() => {
-        pushCloudNotes().catch(() => {});
-      }, 600);
-    }
-
-    async function pushCloudNotes() {
-      if (!isSupabaseConfigured()) return;
-      await restUpsert("weread_challenge", {
-        id: CLOUD_ROW_ID,
-        start_date: "2026-08-27",
-        end_date: "2026-08-30",
-        target_days: 4,
-        target_seconds: 1,
-        daily_read_seconds: notesByDay,
-        synced_at: new Date().toISOString()
-      });
-    }
-
-    async function pullCloudNotes() {
-      if (!isSupabaseConfigured()) return false;
-      const { data, error } = await restSelect("weread_challenge", {
-        select: "daily_read_seconds,synced_at",
-        filter: { id: `eq.${CLOUD_ROW_ID}` }
-      });
-      if (error || !Array.isArray(data) || !data.length) return false;
-
-      const row = data[0];
-      const cloudNotes = row.daily_read_seconds || {};
-      const cloudTime = row.synced_at ? new Date(row.synced_at).getTime() : 0;
-      const localTime = localNotesUpdatedAt();
-      const localHas = hasAnyNotes(notesByDay);
-      const cloudHas = hasAnyNotes(cloudNotes);
-
-      if (cloudHas && !localHas) {
-        notesByDay = cloudNotes;
-        saveNotesLocal(JSON.stringify(notesByDay));
-      } else if (localHas && !cloudHas) {
-        await pushCloudNotes();
-      } else if (localHas && cloudHas) {
-        if (cloudTime > localTime + 5000) {
-          notesByDay = mergeNotes(notesByDay, cloudNotes);
-          saveNotesLocal(JSON.stringify(notesByDay));
-        } else {
-          notesByDay = mergeNotes(cloudNotes, notesByDay);
-          saveNotesLocal(JSON.stringify(notesByDay));
-          await pushCloudNotes();
-        }
-      }
-      return true;
-    }
-
-    function ensureCloudPull() {
-      if (!isSupabaseConfigured()) return Promise.resolve();
-      if (!cloudPullPromise) {
-        cloudPullPromise = pullCloudNotes().finally(() => {
-          cloudPullPromise = null;
-        });
-      }
-      return cloudPullPromise;
-    }
-
-    async function initCloudSync() {
-      if (!isSupabaseConfigured()) return;
-      await ensureCloudPull();
-      renderTimeline();
-      drawDayOnMap();
-    }
-
     function saveNotes() {
       try {
         const payload = JSON.stringify(notesByDay);
-        saveNotesLocal(payload);
-        scheduleCloudSync();
+        localStorage.setItem(NOTES_KEY, payload);
+        localStorage.setItem(NOTES_BACKUP_KEY, payload);
         return true;
       } catch (e) {
         return false;
@@ -963,10 +818,7 @@
       desc.addEventListener("blur", commit);
     }
 
-    window.addEventListener("pagehide", () => {
-      flushTimelineEdits();
-      pushCloudNotes();
-    });
+    window.addEventListener("pagehide", flushTimelineEdits);
     window.addEventListener("beforeunload", flushTimelineEdits);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushTimelineEdits();
@@ -1178,7 +1030,6 @@
 
     initMap();
     loadWeather();
-    initCloudSync();
   </script>
 </body>
 </html>
