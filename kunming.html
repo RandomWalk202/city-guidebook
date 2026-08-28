@@ -722,6 +722,23 @@
 
     const STORAGE_KEY = "city-guidebook:kunming:days:v1";
     const DEFAULT_DAYS = JSON.parse(JSON.stringify(DAYS));
+    const KUNMING = { lat: 25.04, lng: 102.71 };
+    const GEO_ALIASES = {
+      "酒杯楼": "光华街 对月楼",
+      "对月楼": "光华街 对月楼",
+      "南湖春": "翠湖公园南门",
+      "翠湖公园南门": "翠湖公园"
+    };
+    const LOCAL_POIS = (() => {
+      const map = new Map();
+      DEFAULT_DAYS.forEach((d) => d.stops.forEach((stop) => {
+        const key = normalizePlaceName(stop.name);
+        if (key && Number.isFinite(stop.lat) && Number.isFinite(stop.lng)) {
+          map.set(key, { lat: stop.lat, lng: stop.lng, name: stop.name });
+        }
+      }));
+      return map;
+    })();
 
     const WMO = {
       0: "晴", 1: "大部晴朗", 2: "局部多云", 3: "阴天",
@@ -851,36 +868,145 @@
       });
     }
 
+    function normalizePlaceName(name) {
+      return String(name || "")
+        .replace(/[（(][^）)]*[）)]/g, "")
+        .replace(/\s+/g, "")
+        .trim();
+    }
+
+    function buildGeocodeQueries(stop) {
+      const base = normalizePlaceName(stop.name);
+      const desc = String(stop.desc || "").trim();
+      const alias = GEO_ALIASES[base] || GEO_ALIASES[stop.name.trim()];
+      const queries = [];
+      const add = (q) => {
+        q = String(q || "").trim();
+        if (q && !queries.includes(q)) queries.push(q);
+      };
+      if (alias) {
+        add(`昆明 ${alias}`);
+        add(alias);
+      }
+      if (base) {
+        add(`昆明 ${base}`);
+        add(`${base} 昆明`);
+        if (desc) add(`昆明 ${base} ${desc}`);
+      }
+      if (desc) add(/昆明/.test(desc) ? desc : `昆明 ${desc}`);
+      return queries;
+    }
+
+    function kunmingDistanceKm(lng, lat) {
+      const dLat = (lat - KUNMING.lat) * 111;
+      const dLng = (lng - KUNMING.lng) * 111 * Math.cos(KUNMING.lat * Math.PI / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng);
+    }
+
+    function pickBestGeocodeHit(hits, targetName) {
+      if (!hits.length) return null;
+      const target = normalizePlaceName(targetName);
+      const score = (h) => {
+        let s = kunmingDistanceKm(h.lng, h.lat);
+        const city = h.city || "";
+        const state = h.state || "";
+        if (city.includes("昆明") || state.includes("云南")) s *= 0.2;
+        else if (s > 80) s += 500;
+        const hn = normalizePlaceName(h.name);
+        if (hn === target) s *= 0.05;
+        else if (hn.includes(target) || target.includes(hn)) s *= 0.35;
+        return s;
+      };
+      return hits.slice().sort((a, b) => score(a) - score(b))[0];
+    }
+
+    async function geocodePhoton(q) {
+      const url = "https://photon.komoot.io/api/?q="
+        + encodeURIComponent(q) + "&limit=8&lat=" + KUNMING.lat + "&lon=" + KUNMING.lng;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("photon HTTP " + res.status);
+      const data = await res.json();
+      return (data.features || []).map((f) => ({
+        name: f.properties.name || q,
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
+        city: f.properties.city || "",
+        state: f.properties.state || ""
+      }));
+    }
+
+    async function geocodeNominatim(q) {
+      const url = "https://nominatim.openstreetmap.org/search?q="
+        + encodeURIComponent(q)
+        + "&format=json&limit=5&countrycodes=cn"
+        + "&viewbox=102.55,25.15,102.95,24.85&bounded=0";
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("nominatim HTTP " + res.status);
+      const data = await res.json();
+      return data.map((r) => ({
+        name: String(r.display_name || q).split(",")[0],
+        lat: +r.lat,
+        lng: +r.lon,
+        city: "",
+        state: ""
+      }));
+    }
+
+    function lookupLocalPoi(stop) {
+      const key = normalizePlaceName(stop.name);
+      if (LOCAL_POIS.has(key)) return LOCAL_POIS.get(key);
+      for (const [k, v] of LOCAL_POIS.entries()) {
+        if (key.includes(k) || k.includes(key)) return v;
+      }
+      return null;
+    }
+
     async function geocodeStop(idx) {
       const s = DAYS[activeDay].stops[idx];
       if (!s.name.trim()) {
         showToast("请先填写地点名称");
         return false;
       }
-      const q = /昆明/.test(s.name) ? s.name.trim() : `昆明 ${s.name.trim()}`;
       showToast("正在搜索位置…");
-      try {
-        const url = "https://nominatim.openstreetmap.org/search?q="
-          + encodeURIComponent(q) + "&format=json&limit=1";
-        const res = await fetch(url, { headers: { "User-Agent": "city-guidebook/1.0" } });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        if (!data.length) {
-          showToast("未找到该地点，请点地图手动定位");
-          return false;
+      const queries = buildGeocodeQueries(s);
+      let networkError = false;
+
+      for (const q of queries) {
+        for (const provider of [geocodePhoton, geocodeNominatim]) {
+          try {
+            const hits = await provider(q);
+            const best = pickBestGeocodeHit(hits, s.name);
+            if (!best) continue;
+            s.lat = +best.lat.toFixed(6);
+            s.lng = +best.lng.toFixed(6);
+            saveDays();
+            selectedStopIdx = idx;
+            refreshMapOnly({ keepView: true });
+            map.panTo(toMapLatLng(s));
+            showToast("地图已更新：" + best.name);
+            return true;
+          } catch (e) {
+            networkError = true;
+          }
         }
-        s.lat = +(+data[0].lat).toFixed(6);
-        s.lng = +(+data[0].lon).toFixed(6);
+      }
+
+      const local = lookupLocalPoi(s);
+      if (local) {
+        s.lat = local.lat;
+        s.lng = local.lng;
         saveDays();
         selectedStopIdx = idx;
         refreshMapOnly({ keepView: true });
         map.panTo(toMapLatLng(s));
-        showToast("地图已更新：" + s.name);
+        showToast("已用内置坐标：" + local.name);
         return true;
-      } catch (e) {
-        showToast("搜索失败，请点地图或填坐标");
-        return false;
       }
+
+      showToast(networkError
+        ? "搜索服务不可用，请点地图手动定位"
+        : "未找到该地点，请点地图手动定位");
+      return false;
     }
 
     function applyCoords(idx, latVal, lngVal) {
