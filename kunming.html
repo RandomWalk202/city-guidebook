@@ -275,6 +275,70 @@
       font-size: 13px;
       line-height: 1.5;
     }
+    .journal {
+      margin: 10px 14px 4px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px dashed #c5d9d2;
+      background: #f7fbf9;
+    }
+    .journal label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .journal textarea {
+      width: 100%;
+      min-height: 88px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink);
+      background: #fffcf6;
+    }
+    .journal textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 107, 92, 0.12);
+    }
+    .journal .hint {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .stop-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      min-height: 1.4em;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .stop-desc:hover,
+    .stop-desc:focus {
+      border-color: var(--line);
+      background: #fffcf6;
+    }
+    .stop-desc:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 107, 92, 0.1);
+    }
+    .stop-desc:empty::before {
+      content: attr(data-placeholder);
+      color: #9aa8a2;
+    }
     .transit {
       margin: 0 18px;
       padding: 6px 10px 6px 82px;
@@ -555,7 +619,11 @@
       95: "雷阵雨", 96: "雷阵雨伴冰雹", 99: "强雷暴冰雹"
     };
 
+    const NOTES_KEY = "city-guidebook:kunming:notes:v1";
+
     let map, layerGroup, activeDay = 0, stopMarkers = [];
+    let notesByDay = loadNotes();
+    let saveNotesTimer = null;
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -675,6 +743,40 @@
       return `${y}年${m}月${d}日`;
     }
 
+    function loadNotes() {
+      try {
+        const raw = localStorage.getItem(NOTES_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function dayNotes(dayId) {
+      if (!notesByDay[dayId]) notesByDay[dayId] = { journal: "", stops: {} };
+      if (!notesByDay[dayId].stops) notesByDay[dayId].stops = {};
+      return notesByDay[dayId];
+    }
+
+    function scheduleSaveNotes() {
+      clearTimeout(saveNotesTimer);
+      saveNotesTimer = setTimeout(saveNotes, 350);
+    }
+
+    function saveNotes() {
+      try {
+        localStorage.setItem(NOTES_KEY, JSON.stringify(notesByDay));
+      } catch (e) { /* ignore quota */ }
+    }
+
+    function stopDescText(dayId, idx, fallback) {
+      const saved = dayNotes(dayId).stops[String(idx)];
+      if (saved !== undefined && saved !== null) return saved;
+      return fallback || "";
+    }
+
     function renderTimeline() {
       const d = DAYS[activeDay];
       document.getElementById("listTitle").textContent = d.title;
@@ -684,19 +786,66 @@
       box.innerHTML = "";
       const nums = displayNumsFor(d.stops);
 
+      const journal = document.createElement("div");
+      journal.className = "journal";
+      const journalLabel = document.createElement("label");
+      journalLabel.textContent = "游后感";
+      journalLabel.setAttribute("for", "dayJournal");
+      const journalInput = document.createElement("textarea");
+      journalInput.id = "dayJournal";
+      journalInput.placeholder = "写下当天的感受、见闻、推荐或避雷…";
+      journalInput.value = dayNotes(d.id).journal || "";
+      journalInput.addEventListener("input", () => {
+        dayNotes(d.id).journal = journalInput.value;
+        scheduleSaveNotes();
+      });
+      const journalHint = document.createElement("div");
+      journalHint.className = "hint";
+      journalHint.textContent = "自动保存在本机浏览器，换设备不会同步";
+      journal.appendChild(journalLabel);
+      journal.appendChild(journalInput);
+      journal.appendChild(journalHint);
+      box.appendChild(journal);
+
       d.stops.forEach((s, idx) => {
         if (isViaStop(s)) return;
 
         const stop = document.createElement("div");
         stop.className = "stop";
         const num = nums[idx];
-        stop.innerHTML = `
-          <div class="time">${escapeHtml(s.time)}</div>
-          <div>
-            <h3>${num}. ${escapeHtml(s.name)}</h3>
-            ${s.desc ? `<p>${escapeHtml(s.desc)}</p>` : ""}
-          </div>
-        `;
+
+        const timeEl = document.createElement("div");
+        timeEl.className = "time";
+        timeEl.textContent = s.time;
+
+        const body = document.createElement("div");
+        const title = document.createElement("h3");
+        title.textContent = `${num}. ${s.name}`;
+
+        const desc = document.createElement("p");
+        desc.className = "stop-desc";
+        desc.contentEditable = "true";
+        desc.spellcheck = true;
+        desc.dataset.placeholder = "行程描述 / 游后感";
+        desc.textContent = stopDescText(d.id, idx, s.desc);
+
+        desc.addEventListener("click", (e) => e.stopPropagation());
+        desc.addEventListener("input", () => {
+          dayNotes(d.id).stops[String(idx)] = desc.textContent.trim();
+          scheduleSaveNotes();
+          refreshStopPopup(idx);
+        });
+        desc.addEventListener("blur", () => {
+          dayNotes(d.id).stops[String(idx)] = desc.textContent.trim();
+          saveNotes();
+          refreshStopPopup(idx);
+        });
+
+        body.appendChild(title);
+        body.appendChild(desc);
+        stop.appendChild(timeEl);
+        stop.appendChild(body);
+
         stop.onclick = () => {
           document.querySelectorAll(".stop").forEach(x => x.classList.remove("active"));
           stop.classList.add("active");
@@ -752,6 +901,19 @@
       });
     }
 
+    function refreshStopPopup(idx) {
+      const d = DAYS[activeDay];
+      const marker = stopMarkers[idx];
+      const s = d.stops[idx];
+      if (!marker || !s) return;
+      const desc = stopDescText(d.id, idx, s.desc);
+      marker.setPopupContent(`
+        <div class="popup-time">${escapeHtml(s.time)}</div>
+        <div class="popup-title">${escapeHtml(s.name)}</div>
+        ${desc ? `<div class="popup-desc">${escapeHtml(desc)}</div>` : ""}
+      `);
+    }
+
     function drawDayOnMap() {
       if (layerGroup) layerGroup.clearLayers();
       else layerGroup = L.layerGroup().addTo(map);
@@ -789,11 +951,14 @@
         const m = L.marker(toMapLatLng(s), {
           icon: makeIcon(nums[i] || 0, s.kind, s.name, via),
           zIndexOffset: via ? 300 : 400
-        }).bindPopup(`
-          <div class="popup-time">${escapeHtml(s.time)}</div>
-          <div class="popup-title">${escapeHtml(s.name)}</div>
-          ${s.desc ? `<div class="popup-desc">${escapeHtml(s.desc)}</div>` : ""}
-        `);
+        }).bindPopup(() => {
+          const desc = stopDescText(d.id, i, s.desc);
+          return `
+            <div class="popup-time">${escapeHtml(s.time)}</div>
+            <div class="popup-title">${escapeHtml(s.name)}</div>
+            ${desc ? `<div class="popup-desc">${escapeHtml(desc)}</div>` : ""}
+          `;
+        });
         layerGroup.addLayer(m);
         stopMarkers.push(m);
       });
