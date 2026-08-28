@@ -275,44 +275,6 @@
       font-size: 13px;
       line-height: 1.5;
     }
-    .journal {
-      margin: 10px 14px 4px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px dashed #c5d9d2;
-      background: #f7fbf9;
-    }
-    .journal label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      margin-bottom: 8px;
-    }
-    .journal textarea {
-      width: 100%;
-      min-height: 88px;
-      resize: vertical;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font: inherit;
-      font-size: 13px;
-      line-height: 1.55;
-      color: var(--ink);
-      background: #fffcf6;
-    }
-    .journal textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(15, 107, 92, 0.12);
-    }
-    .journal .hint {
-      margin-top: 6px;
-      font-size: 11px;
-      color: var(--muted);
-    }
     .stop-desc {
       margin: 0;
       color: var(--muted);
@@ -755,7 +717,7 @@
     }
 
     function dayNotes(dayId) {
-      if (!notesByDay[dayId]) notesByDay[dayId] = { journal: "", stops: {} };
+      if (!notesByDay[dayId]) notesByDay[dayId] = { stops: {} };
       if (!notesByDay[dayId].stops) notesByDay[dayId].stops = {};
       return notesByDay[dayId];
     }
@@ -786,27 +748,6 @@
       box.innerHTML = "";
       const nums = displayNumsFor(d.stops);
 
-      const journal = document.createElement("div");
-      journal.className = "journal";
-      const journalLabel = document.createElement("label");
-      journalLabel.textContent = "游后感";
-      journalLabel.setAttribute("for", "dayJournal");
-      const journalInput = document.createElement("textarea");
-      journalInput.id = "dayJournal";
-      journalInput.placeholder = "写下当天的感受、见闻、推荐或避雷…";
-      journalInput.value = dayNotes(d.id).journal || "";
-      journalInput.addEventListener("input", () => {
-        dayNotes(d.id).journal = journalInput.value;
-        scheduleSaveNotes();
-      });
-      const journalHint = document.createElement("div");
-      journalHint.className = "hint";
-      journalHint.textContent = "自动保存在本机浏览器，换设备不会同步";
-      journal.appendChild(journalLabel);
-      journal.appendChild(journalInput);
-      journal.appendChild(journalHint);
-      box.appendChild(journal);
-
       d.stops.forEach((s, idx) => {
         if (isViaStop(s)) return;
 
@@ -826,7 +767,7 @@
         desc.className = "stop-desc";
         desc.contentEditable = "true";
         desc.spellcheck = true;
-        desc.dataset.placeholder = "行程描述 / 游后感";
+        desc.dataset.placeholder = "写游后感…";
         desc.textContent = stopDescText(d.id, idx, s.desc);
 
         desc.addEventListener("click", (e) => e.stopPropagation());
