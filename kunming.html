@@ -297,161 +297,6 @@
       border-width: 2px;
       box-shadow: 0 0 0 1.5px rgba(122, 143, 135, 0.25);
     }
-    .card-head .head-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-    .btn {
-      appearance: none;
-      border: 1px solid var(--line);
-      background: #fffcf6;
-      color: var(--ink);
-      font: inherit;
-      font-size: 12px;
-      font-weight: 650;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      line-height: 1.2;
-    }
-    .btn:hover { border-color: var(--accent); }
-    .btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-    .btn.danger {
-      color: #9a3b2f;
-      border-color: #e2c4be;
-    }
-    .btn.tiny {
-      padding: 4px 7px;
-      font-size: 11px;
-    }
-    .edit-banner {
-      display: none;
-      margin: 0;
-      padding: 8px 12px;
-      font-size: 12px;
-      color: var(--accent);
-      background: var(--accent-soft);
-      border-bottom: 1px solid #cfe4dc;
-    }
-    body.editing .edit-banner { display: block; }
-    body.editing .map-card .legend {
-      display: block;
-      color: var(--accent);
-    }
-    .stop-edit {
-      display: grid;
-      gap: 6px;
-    }
-    .stop-edit .row {
-      display: grid;
-      grid-template-columns: 72px 1fr;
-      gap: 8px;
-      align-items: start;
-    }
-    .field {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: #fff;
-      border-radius: 8px;
-      padding: 7px 9px;
-      font: inherit;
-      font-size: 13px;
-      color: var(--ink);
-    }
-    .field:focus {
-      outline: 2px solid rgba(15, 107, 92, 0.22);
-      border-color: var(--accent);
-    }
-    .field.time { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--warm); }
-    .field.name { font-weight: 700; font-size: 14px; }
-    .field.desc { color: var(--muted); }
-    .field.leg {
-      border: none;
-      background: transparent;
-      color: var(--rain);
-      font-size: 12px;
-      font-weight: 650;
-      padding: 0;
-      width: auto;
-      min-width: 8em;
-    }
-    .stop-tools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 2px;
-    }
-    .stop.active {
-      outline: 2px solid rgba(15, 107, 92, 0.35);
-    }
-    .title-edit {
-      width: min(100%, 280px);
-      font-size: 15px;
-      font-weight: 700;
-    }
-    .add-stop {
-      margin: 10px 16px 6px;
-    }
-    .edit-footer {
-      display: none;
-      gap: 8px;
-      flex-wrap: wrap;
-      padding: 10px 16px 14px;
-      border-top: 1px solid var(--line);
-      background: #fffcf6;
-    }
-    body.editing .edit-footer { display: flex; }
-    .transit-edit {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .transit-edit::before {
-      content: "↓";
-      color: var(--rain);
-    }
-    .coord-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 6px;
-      align-items: center;
-    }
-    .coord-row .field {
-      font-size: 12px;
-      padding: 6px 8px;
-      font-variant-numeric: tabular-nums;
-    }
-    .edit-toast {
-      position: fixed;
-      left: 50%;
-      bottom: calc(16px + env(safe-area-inset-bottom));
-      transform: translateX(-50%) translateY(12px);
-      background: rgba(28, 36, 33, 0.92);
-      color: #fff;
-      font-size: 13px;
-      padding: 10px 14px;
-      border-radius: 10px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      z-index: 5000;
-      max-width: min(92vw, 420px);
-      text-align: center;
-    }
-    .edit-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-    body.editing .stop.active {
-      box-shadow: inset 0 0 0 2px rgba(15, 107, 92, 0.35);
-    }
     .wx-board {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -557,18 +402,6 @@
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
       }
-      .card-head .head-actions {
-        gap: 6px;
-      }
-      .btn { padding: 5px 8px; }
-      body.editing .map-card .legend {
-        display: block;
-        font-size: 11px;
-        padding: 6px 12px 8px;
-      }
-      body.editing .edit-footer {
-        padding-bottom: calc(10px + env(safe-area-inset-bottom));
-      }
     }
   </style>
 </head>
@@ -588,34 +421,23 @@
       <section class="card map-card">
         <div class="card-head">
           <h2 id="mapTitle">路线地图</h2>
-          <div class="meta" id="mapMeta">站名旁数字为顺序</div>
+          <div class="meta">站名旁数字为顺序</div>
         </div>
-        <p class="edit-banner" id="mapEditHint">编辑中：先点选右侧地点，再点地图或拖动标记改位置</p>
         <div class="map-shell">
           <div id="map"></div>
         </div>
-        <div class="legend" id="mapLegend">圆点旁为站名 · 连线上为交通耗时</div>
+        <div class="legend">圆点旁为站名 · 连线上为交通耗时</div>
       </section>
 
       <section class="card list-card">
         <div class="card-head">
           <h2 id="listTitle">当日行程</h2>
-          <div class="head-actions">
-            <div class="meta" id="listMeta"></div>
-            <button type="button" class="btn" id="editToggle">编辑行程</button>
-          </div>
+          <div class="meta" id="listMeta"></div>
         </div>
-        <p class="edit-banner">改站名后点「搜索定位」，或选中地点后点地图 / 拖标记；改经纬度后地图会立刻更新。</p>
         <div class="timeline" id="timeline"></div>
-        <div class="edit-footer">
-          <button type="button" class="btn" id="btnExport">导出 JSON</button>
-          <button type="button" class="btn" id="btnCopy">复制 JSON</button>
-          <button type="button" class="btn danger" id="btnReset">恢复默认</button>
-        </div>
       </section>
     </div>
   </div>
-  <div class="edit-toast" id="editToast" aria-live="polite"></div>
 
   <script>
     const HOTEL = {
@@ -720,26 +542,6 @@
       }
     ];
 
-    const STORAGE_KEY = "city-guidebook:kunming:days:v1";
-    const DEFAULT_DAYS = JSON.parse(JSON.stringify(DAYS));
-    const KUNMING = { lat: 25.04, lng: 102.71 };
-    const GEO_ALIASES = {
-      "酒杯楼": "光华街 对月楼",
-      "对月楼": "光华街 对月楼",
-      "南湖春": "翠湖公园南门",
-      "翠湖公园南门": "翠湖公园"
-    };
-    const LOCAL_POIS = (() => {
-      const map = new Map();
-      DEFAULT_DAYS.forEach((d) => d.stops.forEach((stop) => {
-        const key = normalizePlaceName(stop.name);
-        if (key && Number.isFinite(stop.lat) && Number.isFinite(stop.lng)) {
-          map.set(key, { lat: stop.lat, lng: stop.lng, name: stop.name });
-        }
-      }));
-      return map;
-    })();
-
     const WMO = {
       0: "晴", 1: "大部晴朗", 2: "局部多云", 3: "阴天",
       45: "雾", 48: "雾凇",
@@ -750,10 +552,6 @@
     };
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
-    let editMode = false;
-    let selectedStopIdx = null;
-    let skipFitBounds = false;
-    let toastTimer = null;
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -783,248 +581,6 @@
         }
       });
       return nums;
-    }
-
-    function rebuildLegs(day) {
-      const prev = new Map((day.legs || []).map((l) => [l.from + ">" + l.to, l.label]));
-      const sequential = new Map((day.legs || []).map((l) => [l.from, l.label]));
-      day.legs = [];
-      for (let i = 0; i < day.stops.length - 1; i++) {
-        const key = i + ">" + (i + 1);
-        day.legs.push({
-          from: i,
-          to: i + 1,
-          label: prev.get(key) || sequential.get(i) || "步行"
-        });
-      }
-    }
-
-    function saveDays() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DAYS));
-      } catch (e) { /* ignore quota */ }
-    }
-
-    function loadSavedDays() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed) || parsed.length !== DEFAULT_DAYS.length) return;
-        parsed.forEach((d, i) => {
-          if (!d || !Array.isArray(d.stops)) return;
-          DAYS[i].title = d.title || DAYS[i].title;
-          DAYS[i].summary = d.summary || DAYS[i].summary;
-          DAYS[i].stops = d.stops;
-          DAYS[i].legs = Array.isArray(d.legs) ? d.legs : [];
-          rebuildLegs(DAYS[i]);
-        });
-      } catch (e) { /* ignore bad cache */ }
-    }
-
-    function refreshView(opts = {}) {
-      skipFitBounds = !!opts.keepView;
-      renderWeatherBoard();
-      renderTimeline();
-      drawDayOnMap();
-      requestAnimationFrame(() => map && map.invalidateSize());
-      skipFitBounds = false;
-    }
-
-    function refreshMapOnly(opts = {}) {
-      skipFitBounds = !!opts.keepView;
-      drawDayOnMap();
-      syncCoordInputs();
-      requestAnimationFrame(() => map && map.invalidateSize());
-      skipFitBounds = false;
-    }
-
-    function commitChange(opts = {}) {
-      rebuildLegs(DAYS[activeDay]);
-      saveDays();
-      if (opts.mapOnly) refreshMapOnly(opts);
-      else refreshView(opts);
-    }
-
-    function showToast(msg, ms = 2200) {
-      const el = document.getElementById("editToast");
-      if (!el) return;
-      el.textContent = msg;
-      el.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.remove("show"), ms);
-    }
-
-    function syncCoordInputs() {
-      if (!editMode) return;
-      document.querySelectorAll(".stop[data-idx]").forEach((el) => {
-        const idx = Number(el.dataset.idx);
-        const s = DAYS[activeDay].stops[idx];
-        if (!s) return;
-        const lat = el.querySelector('[data-k="lat"]');
-        const lng = el.querySelector('[data-k="lng"]');
-        if (lat && document.activeElement !== lat) lat.value = s.lat;
-        if (lng && document.activeElement !== lng) lng.value = s.lng;
-      });
-    }
-
-    function normalizePlaceName(name) {
-      return String(name || "")
-        .replace(/[（(][^）)]*[）)]/g, "")
-        .replace(/\s+/g, "")
-        .trim();
-    }
-
-    function buildGeocodeQueries(stop) {
-      const base = normalizePlaceName(stop.name);
-      const desc = String(stop.desc || "").trim();
-      const alias = GEO_ALIASES[base] || GEO_ALIASES[stop.name.trim()];
-      const queries = [];
-      const add = (q) => {
-        q = String(q || "").trim();
-        if (q && !queries.includes(q)) queries.push(q);
-      };
-      if (alias) {
-        add(`昆明 ${alias}`);
-        add(alias);
-      }
-      if (base) {
-        add(`昆明 ${base}`);
-        add(`${base} 昆明`);
-        if (desc) add(`昆明 ${base} ${desc}`);
-      }
-      if (desc) add(/昆明/.test(desc) ? desc : `昆明 ${desc}`);
-      return queries;
-    }
-
-    function kunmingDistanceKm(lng, lat) {
-      const dLat = (lat - KUNMING.lat) * 111;
-      const dLng = (lng - KUNMING.lng) * 111 * Math.cos(KUNMING.lat * Math.PI / 180);
-      return Math.sqrt(dLat * dLat + dLng * dLng);
-    }
-
-    function pickBestGeocodeHit(hits, targetName) {
-      if (!hits.length) return null;
-      const target = normalizePlaceName(targetName);
-      const score = (h) => {
-        let s = kunmingDistanceKm(h.lng, h.lat);
-        const city = h.city || "";
-        const state = h.state || "";
-        if (city.includes("昆明") || state.includes("云南")) s *= 0.2;
-        else if (s > 80) s += 500;
-        const hn = normalizePlaceName(h.name);
-        if (hn === target) s *= 0.05;
-        else if (hn.includes(target) || target.includes(hn)) s *= 0.35;
-        return s;
-      };
-      return hits.slice().sort((a, b) => score(a) - score(b))[0];
-    }
-
-    async function geocodePhoton(q) {
-      const url = "https://photon.komoot.io/api/?q="
-        + encodeURIComponent(q) + "&limit=8&lat=" + KUNMING.lat + "&lon=" + KUNMING.lng;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("photon HTTP " + res.status);
-      const data = await res.json();
-      return (data.features || []).map((f) => ({
-        name: f.properties.name || q,
-        lat: f.geometry.coordinates[1],
-        lng: f.geometry.coordinates[0],
-        city: f.properties.city || "",
-        state: f.properties.state || ""
-      }));
-    }
-
-    async function geocodeNominatim(q) {
-      const url = "https://nominatim.openstreetmap.org/search?q="
-        + encodeURIComponent(q)
-        + "&format=json&limit=5&countrycodes=cn"
-        + "&viewbox=102.55,25.15,102.95,24.85&bounded=0";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("nominatim HTTP " + res.status);
-      const data = await res.json();
-      return data.map((r) => ({
-        name: String(r.display_name || q).split(",")[0],
-        lat: +r.lat,
-        lng: +r.lon,
-        city: "",
-        state: ""
-      }));
-    }
-
-    function lookupLocalPoi(stop) {
-      const key = normalizePlaceName(stop.name);
-      if (LOCAL_POIS.has(key)) return LOCAL_POIS.get(key);
-      for (const [k, v] of LOCAL_POIS.entries()) {
-        if (key.includes(k) || k.includes(key)) return v;
-      }
-      return null;
-    }
-
-    async function geocodeStop(idx) {
-      const s = DAYS[activeDay].stops[idx];
-      if (!s.name.trim()) {
-        showToast("请先填写地点名称");
-        return false;
-      }
-      showToast("正在搜索位置…");
-      const queries = buildGeocodeQueries(s);
-      let networkError = false;
-
-      for (const q of queries) {
-        for (const provider of [geocodePhoton, geocodeNominatim]) {
-          try {
-            const hits = await provider(q);
-            const best = pickBestGeocodeHit(hits, s.name);
-            if (!best) continue;
-            s.lat = +best.lat.toFixed(6);
-            s.lng = +best.lng.toFixed(6);
-            saveDays();
-            selectedStopIdx = idx;
-            refreshMapOnly({ keepView: true });
-            map.panTo(toMapLatLng(s));
-            showToast("地图已更新：" + best.name);
-            return true;
-          } catch (e) {
-            networkError = true;
-          }
-        }
-      }
-
-      const local = lookupLocalPoi(s);
-      if (local) {
-        s.lat = local.lat;
-        s.lng = local.lng;
-        saveDays();
-        selectedStopIdx = idx;
-        refreshMapOnly({ keepView: true });
-        map.panTo(toMapLatLng(s));
-        showToast("已用内置坐标：" + local.name);
-        return true;
-      }
-
-      showToast(networkError
-        ? "搜索服务不可用，请点地图手动定位"
-        : "未找到该地点，请点地图手动定位");
-      return false;
-    }
-
-    function applyCoords(idx, latVal, lngVal) {
-      const lat = parseFloat(latVal);
-      const lng = parseFloat(lngVal);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
-      const s = DAYS[activeDay].stops[idx];
-      const nlat = +lat.toFixed(6);
-      const nlng = +lng.toFixed(6);
-      if (s.lat === nlat && s.lng === nlng) return false;
-      s.lat = nlat;
-      s.lng = nlng;
-      saveDays();
-      selectedStopIdx = idx;
-      refreshMapOnly({ keepView: true });
-      map.panTo(toMapLatLng(s));
-      showToast("地图已更新");
-      return true;
     }
 
     function makeIcon(n, kind, name, via) {
@@ -1106,15 +662,6 @@
       return [lat + dLat, lng + dLng];
     }
 
-    // 地图点击得到 GCJ-02，存回 WGS-84
-    function gcj02ToWgs84(lng, lat) {
-      const [glat, glng] = wgs84ToGcj02(lng, lat);
-      return {
-        lat: +(lat * 2 - glat).toFixed(6),
-        lng: +(lng * 2 - glng).toFixed(6)
-      };
-    }
-
     function toMapLatLng(s) {
       return wgs84ToGcj02(s.lng, s.lat);
     }
@@ -1124,111 +671,61 @@
       return `${y}年${m}月${d}日`;
     }
 
-    function setEditMode(on) {
-      editMode = on;
-      document.body.classList.toggle("editing", on);
-      const btn = document.getElementById("editToggle");
-      btn.textContent = on ? "完成" : "编辑行程";
-      btn.classList.toggle("primary", on);
-      document.getElementById("mapMeta").textContent = on ? "选中地点后点地图 / 拖标记 / 搜索定位" : "站名旁数字为顺序";
-      document.getElementById("mapLegend").textContent = on
-        ? "改站名后点「搜索定位」；或直接改经纬度 / 点地图设位置"
-        : "圆点旁为站名 · 连线上为交通耗时";
-      if (!on) selectedStopIdx = null;
-      refreshView({ keepView: true });
-    }
+    function renderTimeline() {
+      const d = DAYS[activeDay];
+      document.getElementById("listTitle").textContent = d.title;
+      document.getElementById("listMeta").textContent = formatCnDate(d.date);
+      document.getElementById("mapTitle").textContent = d.label + " · 路线地图";
+      const box = document.getElementById("timeline");
+      box.innerHTML = "";
+      const nums = displayNumsFor(d.stops);
 
-    function selectStop(idx, fly = true) {
-      selectedStopIdx = idx;
-      document.querySelectorAll(".stop").forEach((el) => {
-        el.classList.toggle("active", Number(el.dataset.idx) === idx);
+      d.stops.forEach((s, idx) => {
+        if (isViaStop(s)) return;
+
+        const stop = document.createElement("div");
+        stop.className = "stop";
+        const num = nums[idx];
+        stop.innerHTML = `
+          <div class="time">${escapeHtml(s.time)}</div>
+          <div>
+            <h3>${num}. ${escapeHtml(s.name)}</h3>
+            ${s.desc ? `<p>${escapeHtml(s.desc)}</p>` : ""}
+          </div>
+        `;
+        stop.onclick = () => {
+          document.querySelectorAll(".stop").forEach(x => x.classList.remove("active"));
+          stop.classList.add("active");
+          map.invalidateSize();
+          const ll = toMapLatLng(s);
+          map.flyTo(ll, isMobile() ? 13 : 15, { duration: 0.45 });
+          const marker = stopMarkers[idx];
+          if (marker) marker.openPopup();
+        };
+        box.appendChild(stop);
+
+        const leg = d.legs.find(l => l.from === idx);
+        if (!leg) return;
+
+        const viaNames = [];
+        let cursor = leg.to;
+        while (isViaStop(d.stops[cursor])) {
+          viaNames.push(d.stops[cursor].name);
+          const nextLeg = d.legs.find(l => l.from === cursor);
+          if (!nextLeg) break;
+          cursor = nextLeg.to;
+        }
+
+        const t = document.createElement("div");
+        t.className = "transit";
+        if (viaNames.length) {
+          t.innerHTML = `↓ ${escapeHtml(leg.label)}<span class="via">途经 ${escapeHtml(viaNames.join("、"))}</span>`;
+        } else {
+          t.textContent = "↓ " + leg.label;
+        }
+        box.appendChild(t);
       });
-      const s = DAYS[activeDay].stops[idx];
-      if (!s || !fly) return;
-      map.invalidateSize();
-      map.flyTo(toMapLatLng(s), isMobile() ? 14 : 15, { duration: 0.35 });
-      const marker = stopMarkers[idx];
-      if (marker && !editMode) marker.openPopup();
     }
-
-    function moveStopToMapLatLng(idx, mapLat, mapLng) {
-      const wgs = gcj02ToWgs84(mapLng, mapLat);
-      const s = DAYS[activeDay].stops[idx];
-      s.lat = wgs.lat;
-      s.lng = wgs.lng;
-      saveDays();
-      selectedStopIdx = idx;
-      refreshMapOnly({ keepView: true });
-      syncCoordInputs();
-      showToast("地图已更新");
-    }
-
-    function addStopAfter(idx) {
-      const day = DAYS[activeDay];
-      const base = day.stops[idx] || day.stops[day.stops.length - 1] || {
-        lat: 25.04, lng: 102.71
-      };
-      const insertAt = idx == null ? day.stops.length : idx + 1;
-      day.stops.splice(insertAt, 0, {
-        time: "",
-        name: "新地点",
-        lat: base.lat,
-        lng: base.lng,
-        kind: "spot",
-        desc: ""
-      });
-      selectedStopIdx = insertAt;
-      commitChange({ keepView: true });
-    }
-
-    function deleteStop(idx) {
-      const day = DAYS[activeDay];
-      if (day.stops.length <= 1) return;
-      day.stops.splice(idx, 1);
-      if (selectedStopIdx === idx) selectedStopIdx = null;
-      else if (selectedStopIdx != null && selectedStopIdx > idx) selectedStopIdx -= 1;
-      commitChange({ keepView: true });
-    }
-
-    function moveStop(idx, dir) {
-      const day = DAYS[activeDay];
-      const j = idx + dir;
-      if (j < 0 || j >= day.stops.length) return;
-      const tmp = day.stops[idx];
-      day.stops[idx] = day.stops[j];
-      day.stops[j] = tmp;
-      selectedStopIdx = j;
-      commitChange({ keepView: true });
-    }
-
-    function exportDays() {
-      const blob = new Blob([JSON.stringify(DAYS, null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "kunming-days.json";
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    async function copyDays() {
-      const text = JSON.stringify(DAYS, null, 2);
-      try {
-        await navigator.clipboard.writeText(text);
-        alert("已复制到剪贴板");
-      } catch (e) {
-        prompt("复制下面的 JSON：", text);
-      }
-    }
-
-    function resetDays() {
-      if (!confirm("恢复为页面默认行程？本机改动会清除。")) return;
-      const fresh = JSON.parse(JSON.stringify(DEFAULT_DAYS));
-      fresh.forEach((d, i) => { DAYS[i] = d; });
-      localStorage.removeItem(STORAGE_KEY);
-      selectedStopIdx = null;
-      refreshView();
-    }
-
     function renderWeatherBoard() {
       const board = document.getElementById("wxBoard");
       board.innerHTML = "";
@@ -1249,169 +746,6 @@
         }
         board.appendChild(el);
       });
-    }
-
-    function renderTimeline() {
-      const d = DAYS[activeDay];
-      const titleEl = document.getElementById("listTitle");
-      const metaEl = document.getElementById("listMeta");
-      document.getElementById("mapTitle").textContent = d.label + " · 路线地图";
-      metaEl.textContent = formatCnDate(d.date);
-
-      if (editMode) {
-        titleEl.innerHTML = "";
-        const input = document.createElement("input");
-        input.className = "field title-edit";
-        input.value = d.title;
-        input.placeholder = "当日标题";
-        input.oninput = () => { d.title = input.value; saveDays(); };
-        titleEl.appendChild(input);
-      } else {
-        titleEl.textContent = d.title;
-      }
-
-      const box = document.getElementById("timeline");
-      box.innerHTML = "";
-      const nums = displayNumsFor(d.stops);
-
-      d.stops.forEach((s, idx) => {
-        if (!editMode && isViaStop(s)) return;
-
-        const stop = document.createElement("div");
-        stop.className = "stop" + (selectedStopIdx === idx ? " active" : "");
-        stop.dataset.idx = String(idx);
-
-        if (editMode) {
-          const num = isViaStop(s) ? "途" : (nums[idx] || "");
-          stop.innerHTML = `
-            <div class="stop-edit" style="grid-column: 1 / -1">
-              <div class="row">
-                <input class="field time" data-k="time" value="${escapeHtml(s.time)}" placeholder="时间" />
-                <input class="field name" data-k="name" value="${escapeHtml(s.name)}" placeholder="地点名称" />
-              </div>
-              <input class="field desc" data-k="desc" value="${escapeHtml(s.desc || "")}" placeholder="备注（可空）" />
-              <div class="coord-row">
-                <input class="field" data-k="lat" inputmode="decimal" value="${s.lat}" placeholder="纬度 lat" />
-                <input class="field" data-k="lng" inputmode="decimal" value="${s.lng}" placeholder="经度 lng" />
-                <button type="button" class="btn tiny" data-act="geo">搜索定位</button>
-              </div>
-              <div class="stop-tools">
-                <span class="meta">#${num}</span>
-                <select class="field" data-k="kind" style="width:auto;padding:4px 8px">
-                  <option value="spot">地点</option>
-                  <option value="food">吃饭</option>
-                  <option value="hotel">酒店</option>
-                  <option value="transit">交通</option>
-                </select>
-                <button type="button" class="btn tiny" data-act="pin">选中定位</button>
-                <button type="button" class="btn tiny" data-act="up">上移</button>
-                <button type="button" class="btn tiny" data-act="down">下移</button>
-                <button type="button" class="btn tiny" data-act="add">下方加站</button>
-                <button type="button" class="btn tiny danger" data-act="del">删除</button>
-              </div>
-            </div>
-          `;
-          stop.querySelector('[data-k="kind"]').value = s.kind || "spot";
-          stop.querySelectorAll("[data-k]").forEach((el) => {
-            const key = el.dataset.k;
-            const syncValue = () => { s[key] = el.value; };
-            el.addEventListener("focus", () => selectStop(idx, false));
-            el.addEventListener("input", () => {
-              syncValue();
-              saveDays();
-            });
-            el.addEventListener("blur", () => {
-              syncValue();
-              saveDays();
-              if (key === "lat" || key === "lng") {
-                const latEl = stop.querySelector('[data-k="lat"]');
-                const lngEl = stop.querySelector('[data-k="lng"]');
-                applyCoords(idx, latEl.value, lngEl.value);
-              } else if (key === "name" || key === "kind" || key === "time") {
-                refreshMapOnly({ keepView: true });
-              }
-            });
-            el.addEventListener("keydown", (e) => {
-              if (e.key === "Enter") { e.preventDefault(); el.blur(); }
-            });
-          });
-          stop.querySelectorAll("[data-act]").forEach((btn) => {
-            btn.onclick = (e) => {
-              e.stopPropagation();
-              const act = btn.dataset.act;
-              if (act === "pin") selectStop(idx, true);
-              if (act === "geo") geocodeStop(idx);
-              if (act === "up") moveStop(idx, -1);
-              if (act === "down") moveStop(idx, 1);
-              if (act === "add") addStopAfter(idx);
-              if (act === "del") deleteStop(idx);
-            };
-          });
-          stop.onclick = (e) => {
-            if (e.target.closest("input, select, button")) return;
-            selectStop(idx, true);
-          };
-        } else {
-          const num = nums[idx];
-          stop.innerHTML = `
-            <div class="time">${escapeHtml(s.time)}</div>
-            <div>
-              <h3>${num}. ${escapeHtml(s.name)}</h3>
-              ${s.desc ? `<p>${escapeHtml(s.desc)}</p>` : ""}
-            </div>
-          `;
-          stop.onclick = () => {
-            selectStop(idx, true);
-          };
-        }
-        box.appendChild(stop);
-
-        const leg = d.legs.find(l => l.from === idx);
-        if (!leg) return;
-
-        if (editMode) {
-          const t = document.createElement("div");
-          t.className = "transit transit-edit";
-          const input = document.createElement("input");
-          input.className = "field leg";
-          input.value = leg.label;
-          input.placeholder = "交通方式，如 步行 / 打车 ≈20min";
-          input.oninput = () => { leg.label = input.value; saveDays(); };
-          input.onblur = () => refreshMapOnly({ keepView: true });
-          t.appendChild(input);
-          box.appendChild(t);
-          return;
-        }
-
-        if (isViaStop(s)) return;
-
-        const viaNames = [];
-        let cursor = leg.to;
-        while (isViaStop(d.stops[cursor])) {
-          viaNames.push(d.stops[cursor].name);
-          const nextLeg = d.legs.find(l => l.from === cursor);
-          if (!nextLeg) break;
-          cursor = nextLeg.to;
-        }
-
-        const t = document.createElement("div");
-        t.className = "transit";
-        if (viaNames.length) {
-          t.innerHTML = `↓ ${escapeHtml(leg.label)}<span class="via">途经 ${escapeHtml(viaNames.join("、"))}</span>`;
-        } else {
-          t.textContent = "↓ " + leg.label;
-        }
-        box.appendChild(t);
-      });
-
-      if (editMode) {
-        const add = document.createElement("button");
-        add.type = "button";
-        add.className = "btn add-stop";
-        add.textContent = "+ 添加地点";
-        add.onclick = () => addStopAfter(d.stops.length - 1);
-        box.appendChild(add);
-      }
     }
 
     function drawDayOnMap() {
@@ -1450,33 +784,25 @@
         const via = isViaStop(s);
         const m = L.marker(toMapLatLng(s), {
           icon: makeIcon(nums[i] || 0, s.kind, s.name, via),
-          zIndexOffset: via ? 300 : 400,
-          draggable: editMode
+          zIndexOffset: via ? 300 : 400
         }).bindPopup(`
           <div class="popup-time">${escapeHtml(s.time)}</div>
           <div class="popup-title">${escapeHtml(s.name)}</div>
           ${s.desc ? `<div class="popup-desc">${escapeHtml(s.desc)}</div>` : ""}
         `);
-        m.on("click", () => selectStop(i, false));
-        if (editMode) {
-          m.on("dragend", () => {
-            const ll = m.getLatLng();
-            moveStopToMapLatLng(i, ll.lat, ll.lng);
-          });
-        }
         layerGroup.addLayer(m);
         stopMarkers.push(m);
       });
 
-      if (!skipFitBounds) {
-        map.fitBounds(latlngs, { padding: isMobile() ? [24, 24] : [56, 56], maxZoom: isMobile() ? 13 : 14 });
-      }
+      map.fitBounds(latlngs, { padding: isMobile() ? [24, 24] : [56, 56], maxZoom: isMobile() ? 13 : 14 });
     }
 
     function selectDay(i) {
       activeDay = i;
-      selectedStopIdx = null;
-      refreshView();
+      renderWeatherBoard();
+      renderTimeline();
+      drawDayOnMap();
+      requestAnimationFrame(() => map.invalidateSize());
     }
 
     async function loadWeather() {
@@ -1512,22 +838,9 @@
         subdomains: "1234",
         attribution: "&copy; 高德地图"
       }).addTo(map);
-      map.on("click", (e) => {
-        if (!editMode || selectedStopIdx == null) return;
-        moveStopToMapLatLng(selectedStopIdx, e.latlng.lat, e.latlng.lng);
-      });
       selectDay(0);
     }
 
-    function bindEditChrome() {
-      document.getElementById("editToggle").onclick = () => setEditMode(!editMode);
-      document.getElementById("btnExport").onclick = exportDays;
-      document.getElementById("btnCopy").onclick = copyDays;
-      document.getElementById("btnReset").onclick = resetDays;
-    }
-
-    loadSavedDays();
-    bindEditChrome();
     initMap();
     loadWeather();
   </script>
