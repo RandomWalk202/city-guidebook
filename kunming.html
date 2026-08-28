@@ -118,6 +118,37 @@
       color: var(--muted);
       font-size: 12px;
     }
+    .card-head .head-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .notes-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .notes-toolbar button,
+    .notes-toolbar label {
+      font: inherit;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fffcf6;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .notes-toolbar label { display: inline-block; }
+    .notes-toolbar input[type="file"] { display: none; }
+    .save-status {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .save-status.ok { color: var(--accent); }
+    .save-status.err { color: #b33; }
     .map-shell {
       position: relative;
       background: transparent;
@@ -465,7 +496,15 @@
       <section class="card list-card">
         <div class="card-head">
           <h2 id="listTitle">当日行程</h2>
-          <div class="meta" id="listMeta"></div>
+          <div class="head-right">
+            <div class="notes-toolbar">
+              <button type="button" id="exportNotesBtn">导出备份</button>
+              <label for="importNotesInput">导入恢复</label>
+              <input type="file" id="importNotesInput" accept="application/json,.json" />
+            </div>
+            <div class="meta" id="listMeta"></div>
+            <div class="save-status" id="saveStatus">游后感自动保存到本机</div>
+          </div>
         </div>
         <div class="timeline" id="timeline"></div>
       </section>
@@ -589,9 +628,12 @@
     };
 
     const NOTES_KEY = "city-guidebook:kunming:notes:v1";
+    const NOTES_BACKUP_KEY = "city-guidebook:kunming:notes:v1:backup";
+    const LEGACY_DAYS_KEY = "city-guidebook:kunming:days:v1";
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
     let notesByDay = loadNotes();
+    let saveStatusTimer = null;
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -712,18 +754,69 @@
     }
 
     function loadNotes() {
+      const fromStorage = (key) => {
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : null;
+        } catch (e) {
+          return null;
+        }
+      };
+
+      let data = fromStorage(NOTES_KEY) || fromStorage(NOTES_BACKUP_KEY);
+      if (!data || !hasAnyNotes(data)) {
+        const migrated = migrateLegacyNotes();
+        if (migrated) data = migrated;
+      }
+      return data && typeof data === "object" ? data : {};
+    }
+
+    function hasAnyNotes(data) {
+      return Object.values(data).some((day) =>
+        day && day.stops && Object.keys(day.stops).some((k) => String(day.stops[k] || "").trim())
+      );
+    }
+
+    function migrateLegacyNotes() {
       try {
-        const raw = localStorage.getItem(NOTES_KEY);
-        if (!raw) return {};
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
+        const raw = localStorage.getItem(LEGACY_DAYS_KEY);
+        if (!raw) return null;
+        const savedDays = JSON.parse(raw);
+        if (!Array.isArray(savedDays)) return null;
+        const out = {};
+        savedDays.forEach((saved, i) => {
+          const base = DAYS[i];
+          if (!base || !saved || !Array.isArray(saved.stops)) return;
+          const stops = {};
+          saved.stops.forEach((stop, idx) => {
+            const baseStop = base.stops[idx];
+            const text = String(stop && stop.desc ? stop.desc : "").trim();
+            const baseText = String(baseStop && baseStop.desc ? baseStop.desc : "").trim();
+            if (text && text !== baseText) stops[String(idx)] = text;
+          });
+          if (Object.keys(stops).length) out[base.id] = { stops };
+        });
+        return Object.keys(out).length ? out : null;
       } catch (e) {
-        return {};
+        return null;
       }
     }
 
-    function reloadNotes() {
-      notesByDay = loadNotes();
+    function setSaveStatus(text, kind) {
+      const el = document.getElementById("saveStatus");
+      if (!el) return;
+      el.textContent = text;
+      el.classList.remove("ok", "err");
+      if (kind) el.classList.add(kind);
+      clearTimeout(saveStatusTimer);
+      if (kind === "ok") {
+        saveStatusTimer = setTimeout(() => {
+          el.textContent = "游后感自动保存到本机";
+          el.classList.remove("ok");
+        }, 2500);
+      }
     }
 
     function dayNotes(dayId) {
@@ -734,11 +827,46 @@
 
     function saveNotes() {
       try {
-        localStorage.setItem(NOTES_KEY, JSON.stringify(notesByDay));
+        const payload = JSON.stringify(notesByDay);
+        localStorage.setItem(NOTES_KEY, payload);
+        localStorage.setItem(NOTES_BACKUP_KEY, payload);
+        setSaveStatus("已保存 " + new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), "ok");
         return true;
       } catch (e) {
+        setSaveStatus("保存失败，请立刻点「导出备份」", "err");
         return false;
       }
+    }
+
+    function exportNotes() {
+      flushTimelineEdits();
+      const blob = new Blob([JSON.stringify(notesByDay, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "kunming-notes-" + new Date().toISOString().slice(0, 10) + ".json";
+      a.click();
+      URL.revokeObjectURL(url);
+      setSaveStatus("已导出备份文件", "ok");
+    }
+
+    function importNotes(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result || ""));
+          if (!parsed || typeof parsed !== "object") throw new Error("invalid");
+          flushTimelineEdits();
+          notesByDay = parsed;
+          saveNotes();
+          renderTimeline();
+          drawDayOnMap();
+          setSaveStatus("已从备份恢复", "ok");
+        } catch (e) {
+          setSaveStatus("导入失败，文件格式不对", "err");
+        }
+      };
+      reader.readAsText(file, "utf-8");
     }
 
     function stopDescText(dayId, idx, fallback) {
@@ -799,10 +927,17 @@
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushTimelineEdits();
     });
+    window.setInterval(flushTimelineEdits, 3000);
+
+    document.getElementById("exportNotesBtn").addEventListener("click", exportNotes);
+    document.getElementById("importNotesInput").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) importNotes(file);
+      e.target.value = "";
+    });
 
     function renderTimeline() {
       flushTimelineEdits();
-      reloadNotes();
       const d = DAYS[activeDay];
       document.getElementById("listTitle").textContent = d.title;
       document.getElementById("listMeta").textContent = formatCnDate(d.date);
