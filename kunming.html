@@ -118,37 +118,6 @@
       color: var(--muted);
       font-size: 12px;
     }
-    .card-head .head-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-    }
-    .notes-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      justify-content: flex-end;
-    }
-    .notes-toolbar button,
-    .notes-toolbar label {
-      font: inherit;
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      background: #fffcf6;
-      color: var(--ink);
-      cursor: pointer;
-    }
-    .notes-toolbar label { display: inline-block; }
-    .notes-toolbar input[type="file"] { display: none; }
-    .save-status {
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .save-status.ok { color: var(--accent); }
-    .save-status.err { color: #b33; }
     .map-shell {
       position: relative;
       background: transparent;
@@ -332,13 +301,6 @@
       content: attr(data-placeholder);
       color: #9aa8a2;
     }
-    .stop-desc.is-dirty {
-      border-color: #d4cbb8;
-      background: #fffdf8;
-    }
-    .stop-desc.is-saved {
-      border-color: #c5ddd6;
-    }
     .transit {
       margin: 0 18px;
       padding: 6px 10px 6px 82px;
@@ -496,15 +458,7 @@
       <section class="card list-card">
         <div class="card-head">
           <h2 id="listTitle">当日行程</h2>
-          <div class="head-right">
-            <div class="notes-toolbar">
-              <button type="button" id="exportNotesBtn">导出备份</button>
-              <label for="importNotesInput">导入恢复</label>
-              <input type="file" id="importNotesInput" accept="application/json,.json" />
-            </div>
-            <div class="meta" id="listMeta"></div>
-            <div class="save-status" id="saveStatus">游后感自动保存到本机</div>
-          </div>
+          <div class="meta" id="listMeta"></div>
         </div>
         <div class="timeline" id="timeline"></div>
       </section>
@@ -633,7 +587,6 @@
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
     let notesByDay = loadNotes();
-    let saveStatusTimer = null;
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -804,18 +757,14 @@
       }
     }
 
-    function setSaveStatus(text, kind) {
-      const el = document.getElementById("saveStatus");
-      if (!el) return;
-      el.textContent = text;
-      el.classList.remove("ok", "err");
-      if (kind) el.classList.add(kind);
-      clearTimeout(saveStatusTimer);
-      if (kind === "ok") {
-        saveStatusTimer = setTimeout(() => {
-          el.textContent = "游后感自动保存到本机";
-          el.classList.remove("ok");
-        }, 2500);
+    function saveNotes() {
+      try {
+        const payload = JSON.stringify(notesByDay);
+        localStorage.setItem(NOTES_KEY, payload);
+        localStorage.setItem(NOTES_BACKUP_KEY, payload);
+        return true;
+      } catch (e) {
+        return false;
       }
     }
 
@@ -825,50 +774,6 @@
       return notesByDay[dayId];
     }
 
-    function saveNotes() {
-      try {
-        const payload = JSON.stringify(notesByDay);
-        localStorage.setItem(NOTES_KEY, payload);
-        localStorage.setItem(NOTES_BACKUP_KEY, payload);
-        setSaveStatus("已保存 " + new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), "ok");
-        return true;
-      } catch (e) {
-        setSaveStatus("保存失败，请立刻点「导出备份」", "err");
-        return false;
-      }
-    }
-
-    function exportNotes() {
-      flushTimelineEdits();
-      const blob = new Blob([JSON.stringify(notesByDay, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "kunming-notes-" + new Date().toISOString().slice(0, 10) + ".json";
-      a.click();
-      URL.revokeObjectURL(url);
-      setSaveStatus("已导出备份文件", "ok");
-    }
-
-    function importNotes(file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const parsed = JSON.parse(String(reader.result || ""));
-          if (!parsed || typeof parsed !== "object") throw new Error("invalid");
-          flushTimelineEdits();
-          notesByDay = parsed;
-          saveNotes();
-          renderTimeline();
-          drawDayOnMap();
-          setSaveStatus("已从备份恢复", "ok");
-        } catch (e) {
-          setSaveStatus("导入失败，文件格式不对", "err");
-        }
-      };
-      reader.readAsText(file, "utf-8");
-    }
-
     function stopDescText(dayId, idx, fallback) {
       const stops = dayNotes(dayId).stops;
       const key = String(idx);
@@ -876,14 +781,9 @@
       return fallback || "";
     }
 
-    function updateStopDesc(dayId, idx, text, el) {
+    function updateStopDesc(dayId, idx, text) {
       dayNotes(dayId).stops[String(idx)] = text;
-      const ok = saveNotes();
-      if (el) {
-        el.classList.toggle("is-dirty", !ok);
-        el.classList.toggle("is-saved", ok);
-      }
-      return ok;
+      return saveNotes();
     }
 
     function flushTimelineEdits() {
@@ -908,7 +808,7 @@
       desc.dataset.stopIdx = String(idx);
 
       function commit() {
-        updateStopDesc(dayId, idx, desc.textContent.trim(), desc);
+        updateStopDesc(dayId, idx, desc.textContent.trim());
         refreshStopPopup(idx);
       }
 
@@ -916,10 +816,6 @@
       desc.addEventListener("input", commit);
       desc.addEventListener("compositionend", commit);
       desc.addEventListener("blur", commit);
-
-      if (Object.prototype.hasOwnProperty.call(dayNotes(dayId).stops, String(idx))) {
-        desc.classList.add("is-saved");
-      }
     }
 
     window.addEventListener("pagehide", flushTimelineEdits);
@@ -928,13 +824,6 @@
       if (document.visibilityState === "hidden") flushTimelineEdits();
     });
     window.setInterval(flushTimelineEdits, 3000);
-
-    document.getElementById("exportNotesBtn").addEventListener("click", exportNotes);
-    document.getElementById("importNotesInput").addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (file) importNotes(file);
-      e.target.value = "";
-    });
 
     function renderTimeline() {
       flushTimelineEdits();
