@@ -301,6 +301,13 @@
       content: attr(data-placeholder);
       color: #9aa8a2;
     }
+    .stop-desc.is-dirty {
+      border-color: #d4cbb8;
+      background: #fffdf8;
+    }
+    .stop-desc.is-saved {
+      border-color: #c5ddd6;
+    }
     .transit {
       margin: 0 18px;
       padding: 6px 10px 6px 82px;
@@ -585,7 +592,6 @@
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
     let notesByDay = loadNotes();
-    let saveNotesTimer = null;
     const weatherByDate = {};
 
     function escapeHtml(s) {
@@ -716,30 +722,87 @@
       }
     }
 
+    function reloadNotes() {
+      notesByDay = loadNotes();
+    }
+
     function dayNotes(dayId) {
       if (!notesByDay[dayId]) notesByDay[dayId] = { stops: {} };
       if (!notesByDay[dayId].stops) notesByDay[dayId].stops = {};
       return notesByDay[dayId];
     }
 
-    function scheduleSaveNotes() {
-      clearTimeout(saveNotesTimer);
-      saveNotesTimer = setTimeout(saveNotes, 350);
-    }
-
     function saveNotes() {
       try {
         localStorage.setItem(NOTES_KEY, JSON.stringify(notesByDay));
-      } catch (e) { /* ignore quota */ }
+        return true;
+      } catch (e) {
+        return false;
+      }
     }
 
     function stopDescText(dayId, idx, fallback) {
-      const saved = dayNotes(dayId).stops[String(idx)];
-      if (saved !== undefined && saved !== null) return saved;
+      const stops = dayNotes(dayId).stops;
+      const key = String(idx);
+      if (Object.prototype.hasOwnProperty.call(stops, key)) return stops[key];
       return fallback || "";
     }
 
+    function updateStopDesc(dayId, idx, text, el) {
+      dayNotes(dayId).stops[String(idx)] = text;
+      const ok = saveNotes();
+      if (el) {
+        el.classList.toggle("is-dirty", !ok);
+        el.classList.toggle("is-saved", ok);
+      }
+      return ok;
+    }
+
+    function flushTimelineEdits() {
+      let changed = false;
+      document.querySelectorAll("#timeline .stop-desc").forEach((el) => {
+        const dayId = el.dataset.dayId;
+        const idx = el.dataset.stopIdx;
+        if (!dayId || idx == null) return;
+        const text = el.textContent.trim();
+        const key = String(idx);
+        const prev = dayNotes(dayId).stops[key];
+        if (prev !== text) {
+          dayNotes(dayId).stops[key] = text;
+          changed = true;
+        }
+      });
+      if (changed) saveNotes();
+    }
+
+    function bindDescEditor(desc, dayId, idx) {
+      desc.dataset.dayId = dayId;
+      desc.dataset.stopIdx = String(idx);
+
+      function commit() {
+        updateStopDesc(dayId, idx, desc.textContent.trim(), desc);
+        refreshStopPopup(idx);
+      }
+
+      desc.addEventListener("click", (e) => e.stopPropagation());
+      desc.addEventListener("input", commit);
+      desc.addEventListener("compositionend", commit);
+      desc.addEventListener("blur", commit);
+
+      if (Object.prototype.hasOwnProperty.call(dayNotes(dayId).stops, String(idx))) {
+        desc.classList.add("is-saved");
+      }
+    }
+
+    window.addEventListener("pagehide", flushTimelineEdits);
+    window.addEventListener("beforeunload", flushTimelineEdits);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flushTimelineEdits();
+    });
+
     function renderTimeline() {
+      flushTimelineEdits();
+      reloadNotes();
       const d = DAYS[activeDay];
       document.getElementById("listTitle").textContent = d.title;
       document.getElementById("listMeta").textContent = formatCnDate(d.date);
@@ -769,18 +832,7 @@
         desc.spellcheck = true;
         desc.dataset.placeholder = "写游后感…";
         desc.textContent = stopDescText(d.id, idx, s.desc);
-
-        desc.addEventListener("click", (e) => e.stopPropagation());
-        desc.addEventListener("input", () => {
-          dayNotes(d.id).stops[String(idx)] = desc.textContent.trim();
-          scheduleSaveNotes();
-          refreshStopPopup(idx);
-        });
-        desc.addEventListener("blur", () => {
-          dayNotes(d.id).stops[String(idx)] = desc.textContent.trim();
-          saveNotes();
-          refreshStopPopup(idx);
-        });
+        bindDescEditor(desc, d.id, idx);
 
         body.appendChild(title);
         body.appendChild(desc);
@@ -908,6 +960,7 @@
     }
 
     function selectDay(i) {
+      flushTimelineEdits();
       activeDay = i;
       renderWeatherBoard();
       renderTimeline();
