@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <style>
     :root {
       --bg: #f3f0e8;
@@ -69,6 +71,101 @@
       color: var(--muted);
       font-size: 13px;
       letter-spacing: 0.16em;
+    }
+    .crumb .auth-spacer { flex: 1; }
+    .auth-chip {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .auth-chip.visible { display: flex; }
+    .auth-chip button,
+    .auth-chip a {
+      font: inherit;
+      font-size: 12px;
+      color: var(--accent);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .auth-chip button:hover,
+    .auth-chip a:hover { opacity: 0.75; }
+    .auth-email {
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .auth-dialog {
+      border: none;
+      border-radius: 14px;
+      padding: 0;
+      max-width: 360px;
+      width: calc(100% - 32px);
+      box-shadow: var(--shadow);
+    }
+    .auth-dialog::backdrop {
+      background: rgba(28, 36, 33, 0.35);
+    }
+    .auth-dialog-inner {
+      padding: 20px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+    .auth-dialog h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .auth-dialog p {
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .auth-dialog input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font: inherit;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .auth-dialog input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 107, 92, 0.1);
+    }
+    .auth-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .auth-dialog-actions button {
+      font: inherit;
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: #fffcf6;
+      color: var(--ink);
+    }
+    .auth-dialog-actions button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .auth-msg {
+      font-size: 12px;
+      color: var(--warm);
+      min-height: 1.2em;
+      margin-bottom: 8px;
     }
     .eyebrow {
       color: var(--accent);
@@ -438,8 +535,26 @@
         <a href="./">城市路书</a>
         <span class="sep">/</span>
         <span class="here">昆明</span>
+        <span class="auth-spacer"></span>
+        <span class="auth-chip" id="authChip">
+          <span class="auth-email" id="authEmail"></span>
+          <button type="button" id="authAction">登录同步</button>
+        </span>
       </nav>
     </header>
+
+    <dialog class="auth-dialog" id="authDialog">
+      <div class="auth-dialog-inner">
+        <h3>登录以云端同步游后感</h3>
+        <p>输入邮箱，我们会发一封登录链接。只有你能看到自己的笔记。</p>
+        <div class="auth-msg" id="authMsg"></div>
+        <input type="email" id="authEmailInput" placeholder="your@email.com" autocomplete="email" />
+        <div class="auth-dialog-actions">
+          <button type="button" id="authCancel">取消</button>
+          <button type="button" class="primary" id="authSend">发送链接</button>
+        </div>
+      </div>
+    </dialog>
 
     <div class="wx-board" id="wxBoard"></div>
 
@@ -583,11 +698,16 @@
 
     const NOTES_KEY = "city-guidebook:kunming:notes:v1";
     const NOTES_BACKUP_KEY = "city-guidebook:kunming:notes:v1:backup";
+    const NOTES_UPDATED_KEY = "city-guidebook:kunming:notes:v1:updated";
     const LEGACY_DAYS_KEY = "city-guidebook:kunming:days:v1";
+    const GUIDE_ID = "kunming";
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
     let notesByDay = loadNotes();
     const weatherByDate = {};
+    let supabaseClient = null;
+    let cloudSyncTimer = null;
+    let cloudPullPromise = null;
 
     function escapeHtml(s) {
       return String(s)
@@ -757,11 +877,206 @@
       }
     }
 
+    function saveNotesLocal(payload) {
+      localStorage.setItem(NOTES_KEY, payload);
+      localStorage.setItem(NOTES_BACKUP_KEY, payload);
+      localStorage.setItem(NOTES_UPDATED_KEY, String(Date.now()));
+    }
+
+    function localNotesUpdatedAt() {
+      const raw = localStorage.getItem(NOTES_UPDATED_KEY);
+      const n = raw ? Number(raw) : 0;
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function mergeNotes(local, cloud) {
+      const out = JSON.parse(JSON.stringify(local || {}));
+      Object.entries(cloud || {}).forEach(([dayId, day]) => {
+        if (!day || !day.stops) return;
+        if (!out[dayId]) out[dayId] = { stops: {} };
+        if (!out[dayId].stops) out[dayId].stops = {};
+        Object.entries(day.stops).forEach(([idx, text]) => {
+          const localText = String(out[dayId].stops[idx] || "").trim();
+          const cloudText = String(text || "").trim();
+          if (!localText && cloudText) out[dayId].stops[idx] = cloudText;
+          else if (localText && !cloudText) out[dayId].stops[idx] = out[dayId].stops[idx];
+          else if (localText && cloudText) out[dayId].stops[idx] = localText.length >= cloudText.length ? out[dayId].stops[idx] : cloudText;
+        });
+      });
+      return out;
+    }
+
+    function isSupabaseConfigured() {
+      const cfg = window.SUPABASE_CONFIG;
+      return !!(cfg && cfg.url && cfg.anonKey
+        && !cfg.url.includes("YOUR_PROJECT")
+        && !cfg.anonKey.includes("YOUR_ANON"));
+    }
+
+    function initSupabaseClient() {
+      if (!isSupabaseConfigured() || !window.supabase) return null;
+      const cfg = window.SUPABASE_CONFIG;
+      return window.supabase.createClient(cfg.url, cfg.anonKey, {
+        auth: {
+          persistSession: true,
+          detectSessionInUrl: true,
+          autoRefreshToken: true
+        }
+      });
+    }
+
+    function scheduleCloudSync() {
+      if (!supabaseClient) return;
+      clearTimeout(cloudSyncTimer);
+      cloudSyncTimer = setTimeout(() => {
+        pushCloudNotes().catch(() => {});
+      }, 600);
+    }
+
+    async function pushCloudNotes() {
+      if (!supabaseClient) return;
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) return;
+      await supabaseClient.from("guide_notes").upsert({
+        user_id: user.id,
+        guide: GUIDE_ID,
+        notes: notesByDay,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id,guide" });
+    }
+
+    async function pullCloudNotes() {
+      if (!supabaseClient) return false;
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) return false;
+      const { data, error } = await supabaseClient
+        .from("guide_notes")
+        .select("notes, updated_at")
+        .eq("guide", GUIDE_ID)
+        .maybeSingle();
+      if (error) return false;
+
+      const cloudNotes = (data && data.notes) || {};
+      const cloudTime = data && data.updated_at ? new Date(data.updated_at).getTime() : 0;
+      const localTime = localNotesUpdatedAt();
+      const localHas = hasAnyNotes(notesByDay);
+      const cloudHas = hasAnyNotes(cloudNotes);
+
+      if (cloudHas && !localHas) {
+        notesByDay = cloudNotes;
+        saveNotesLocal(JSON.stringify(notesByDay));
+      } else if (localHas && !cloudHas) {
+        await pushCloudNotes();
+      } else if (localHas && cloudHas) {
+        if (cloudTime > localTime + 5000) {
+          notesByDay = mergeNotes(notesByDay, cloudNotes);
+          saveNotesLocal(JSON.stringify(notesByDay));
+        } else {
+          notesByDay = mergeNotes(cloudNotes, notesByDay);
+          saveNotesLocal(JSON.stringify(notesByDay));
+          await pushCloudNotes();
+        }
+      }
+      return true;
+    }
+
+    function ensureCloudPull() {
+      if (!supabaseClient) return Promise.resolve();
+      if (!cloudPullPromise) {
+        cloudPullPromise = pullCloudNotes().finally(() => {
+          cloudPullPromise = null;
+        });
+      }
+      return cloudPullPromise;
+    }
+
+    function updateAuthUi(session) {
+      const chip = document.getElementById("authChip");
+      const emailEl = document.getElementById("authEmail");
+      const action = document.getElementById("authAction");
+      if (!chip || !action) return;
+      if (!isSupabaseConfigured()) {
+        chip.classList.remove("visible");
+        return;
+      }
+      chip.classList.add("visible");
+      if (session && session.user) {
+        emailEl.textContent = session.user.email || "已登录";
+        action.textContent = "退出";
+      } else {
+        emailEl.textContent = "";
+        action.textContent = "登录同步";
+      }
+    }
+
+    function bindAuthUi() {
+      const chip = document.getElementById("authChip");
+      const dialog = document.getElementById("authDialog");
+      const input = document.getElementById("authEmailInput");
+      const msg = document.getElementById("authMsg");
+      const sendBtn = document.getElementById("authSend");
+      const cancelBtn = document.getElementById("authCancel");
+      const action = document.getElementById("authAction");
+      if (!chip || !dialog || !action || !supabaseClient) return;
+
+      action.addEventListener("click", async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+          await supabaseClient.auth.signOut();
+          return;
+        }
+        msg.textContent = "";
+        if (typeof dialog.showModal === "function") dialog.showModal();
+      });
+
+      cancelBtn.addEventListener("click", () => dialog.close());
+      sendBtn.addEventListener("click", async () => {
+        const email = (input.value || "").trim();
+        if (!email) {
+          msg.textContent = "请输入邮箱";
+          return;
+        }
+        sendBtn.disabled = true;
+        msg.textContent = "发送中…";
+        const redirectTo = window.location.href.split("#")[0];
+        const { error } = await supabaseClient.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: redirectTo }
+        });
+        sendBtn.disabled = false;
+        if (error) {
+          msg.textContent = error.message;
+          return;
+        }
+        msg.textContent = "链接已发送，请查收邮件";
+      });
+    }
+
+    async function initCloudSync() {
+      if (!isSupabaseConfigured()) return;
+      supabaseClient = initSupabaseClient();
+      if (!supabaseClient) return;
+
+      bindAuthUi();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      updateAuthUi(session);
+      if (session) await ensureCloudPull();
+
+      supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+        updateAuthUi(session);
+        if (session) {
+          await ensureCloudPull();
+          renderTimeline();
+          drawDayOnMap();
+        }
+      });
+    }
+
     function saveNotes() {
       try {
         const payload = JSON.stringify(notesByDay);
-        localStorage.setItem(NOTES_KEY, payload);
-        localStorage.setItem(NOTES_BACKUP_KEY, payload);
+        saveNotesLocal(payload);
+        scheduleCloudSync();
         return true;
       } catch (e) {
         return false;
@@ -818,7 +1133,10 @@
       desc.addEventListener("blur", commit);
     }
 
-    window.addEventListener("pagehide", flushTimelineEdits);
+    window.addEventListener("pagehide", () => {
+      flushTimelineEdits();
+      if (supabaseClient) pushCloudNotes();
+    });
     window.addEventListener("beforeunload", flushTimelineEdits);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushTimelineEdits();
@@ -1030,6 +1348,7 @@
 
     initMap();
     loadWeather();
+    initCloudSync();
   </script>
 </body>
 </html>
