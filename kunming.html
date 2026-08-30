@@ -566,19 +566,19 @@
         id: "d30",
         date: "2026-08-30",
         label: "周日 8/30",
-        title: "咖啡 · 划船 · 返程",
-        summary: "福保村 seainhicoffee → 海洪湿地划船 → 视航班返机场",
+        title: "海洪划船 · 旮旯食堂 · 返程",
+        summary: "海洪湿地森林船 → 旮旯食堂 → 回酒店 → 机场",
         stops: [
-          { time: "09:00", name: "酒店出发", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "出发" },
-          { time: "10:00–11:00", name: "seainhicoffee（福保村）", lat: 24.9390, lng: 102.6915, kind: "food", desc: "地铁福保站附近，村内步行可达" },
-          { time: "11:30–12:00", name: "海洪湿地划船（北门）", lat: 24.9598, lng: 102.6825, kind: "spot", desc: "" },
-          { time: "午饭后", name: "返回酒店取行李", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "预留弹性" },
+          { time: "10:00", name: "酒店出发", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "出发" },
+          { time: "10:30–12:00", name: "海洪湿地划船（北门）", lat: 24.9598, lng: 102.6825, kind: "spot", desc: "乘坐森林船" },
+          { time: "12:00–13:20", name: "旮旯食堂·现炒云南菜(海乐世界店)", lat: 24.9688, lng: 102.7408, kind: "food", desc: "海乐世界负一层 BF-04" },
+          { time: "13:20–13:35", name: "回酒店取行李", lat: HOTEL.lat, lng: HOTEL.lng, kind: "hotel", desc: "出发去机场" },
           { time: "视航班", name: "昆明长水国际机场", lat: 25.1019, lng: 102.9292, kind: "transit", desc: "建议起飞前 3 小时抵达机场" }
         ],
         legs: [
-          { from: 0, to: 1, label: "打车+步行 ≈45min" },
-          { from: 1, to: 2, label: "打车 ≈20min" },
-          { from: 2, to: 3, label: "返回酒店" },
+          { from: 0, to: 1, label: "打车 ≈30min" },
+          { from: 1, to: 2, label: "打车 ≈15min" },
+          { from: 2, to: 3, label: "打车 ≈15min" },
           { from: 3, to: 4, label: "打车 ≈45–70min" }
         ]
       }
