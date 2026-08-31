@@ -791,7 +791,10 @@
     function stopDescText(dayId, idx, fallback) {
       const stops = dayNotes(dayId).stops;
       const key = String(idx);
-      if (Object.prototype.hasOwnProperty.call(stops, key)) return stops[key];
+      if (Object.prototype.hasOwnProperty.call(stops, key)) {
+        const saved = stops[key];
+        if (String(saved || "").trim()) return saved;
+      }
       return fallback || "";
     }
 
