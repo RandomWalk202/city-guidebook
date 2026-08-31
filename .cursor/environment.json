@@ -1,0 +1,13 @@
+{
+  "name": "Kunming Guidebook",
+  "ports": [
+    { "name": "web server", "port": 8000 }
+  ],
+  "terminals": [
+    {
+      "name": "web",
+      "command": "python3 -m http.server 8000",
+      "description": "Serves the static guidebook at http://localhost:8000"
+    }
+  ]
+}
