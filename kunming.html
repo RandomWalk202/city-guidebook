@@ -608,7 +608,14 @@
 
     let map, layerGroup, activeDay = 0, stopMarkers = [];
     let notesByDay = loadNotes();
-    const weatherByDate = {};
+    // 行程已过，默认用历史天气兜底；Open-Meteo 在国内常不稳定
+    const WEATHER_FALLBACK = {
+      "2026-08-27": { tMax: 26, tMin: 17, rain: "4.7", desc: "强毛毛雨" },
+      "2026-08-28": { tMax: 27, tMin: 16, rain: "4.5", desc: "小雨" },
+      "2026-08-29": { tMax: 25, tMin: 17, rain: "12.6", desc: "中雨" },
+      "2026-08-30": { tMax: 24, tMin: 16, rain: "1.2", desc: "毛毛雨" }
+    };
+    const weatherByDate = { ...WEATHER_FALLBACK };
 
     function escapeHtml(s) {
       return String(s)
@@ -1016,30 +1023,53 @@
       requestAnimationFrame(() => map.invalidateSize());
     }
 
-    async function loadWeather() {
+    function applyWeatherDaily(daily) {
+      if (!daily || !Array.isArray(daily.time)) return false;
+      daily.time.forEach((date, i) => {
+        const code = daily.weather_code[i];
+        weatherByDate[date] = {
+          tMax: Math.round(daily.temperature_2m_max[i]),
+          tMin: Math.round(daily.temperature_2m_min[i]),
+          rain: (daily.precipitation_sum[i] ?? 0).toFixed(1),
+          desc: WMO[code] || ("天气代码 " + code)
+        };
+      });
+      return true;
+    }
+
+    async function fetchWeatherJson(url) {
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = controller ? setTimeout(() => controller.abort(), 8000) : null;
       try {
-        const url = "https://api.open-meteo.com/v1/forecast"
-          + "?latitude=25.04&longitude=102.72"
-          + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum"
-          + "&timezone=Asia%2FShanghai"
-          + "&start_date=2026-08-27&end_date=2026-08-30";
-        const res = await fetch(url);
+        const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
         if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        const daily = data.daily;
-        daily.time.forEach((date, i) => {
-          const code = daily.weather_code[i];
-          weatherByDate[date] = {
-            tMax: Math.round(daily.temperature_2m_max[i]),
-            tMin: Math.round(daily.temperature_2m_min[i]),
-            rain: (daily.precipitation_sum[i] ?? 0).toFixed(1),
-            desc: WMO[code] || ("天气代码 " + code)
-          };
-        });
-      } catch (e) {
-        // weather cards stay as loading placeholders
+        return await res.json();
+      } finally {
+        if (timer) clearTimeout(timer);
       }
+    }
+
+    async function loadWeather() {
       renderWeatherBoard();
+      const query = "?latitude=25.04&longitude=102.72"
+        + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum"
+        + "&timezone=Asia%2FShanghai"
+        + "&start_date=2026-08-27&end_date=2026-08-30";
+      const urls = [
+        "https://archive-api.open-meteo.com/v1/archive" + query,
+        "https://api.open-meteo.com/v1/forecast" + query
+      ];
+      for (const url of urls) {
+        try {
+          const data = await fetchWeatherJson(url);
+          if (applyWeatherDaily(data.daily)) {
+            renderWeatherBoard();
+            return;
+          }
+        } catch (e) {
+          // try next source; fallback cards already rendered
+        }
+      }
     }
 
     function initMap() {
